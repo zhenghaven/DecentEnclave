@@ -16,7 +16,7 @@
 
 #include <SimpleSysIO/SysCall/Files.hpp>
 
-#include "../../Common/SimpleIO.hpp"
+#include "../../Common/Internal/SimpleIO.hpp"
 #include "../EnclaveExceptions.hpp"
 
 
@@ -33,17 +33,19 @@ class SgxEnclave : virtual public Untrusted::EnclaveBase
 public:
 	SgxEnclave(
 		const std::string& enclaveImgPath = DECENT_ENCLAVE_PLATFORM_SGX_IMAGE,
-		const std::string& launchTokenPath = DECENT_ENCLAVE_PLATFORM_SGX_TOKEN,
+		const std::string& launchTokenPath = DECENT_ENCLAVE_PLATFORM_SGX_TOKEN
 	) :
 		m_encId(0)
 	{
+		namespace _SysCall = Common::Internal::IO::SysCall;
+
 		sgx_launch_token_t token = { 0 };
 		static constexpr size_t tokenLen = sizeof(sgx_launch_token_t);
 
 		try
 		{
-			auto file = SysCall::RBinaryFile::Open(launchTokenPath);
-			auto tokenBuf = file.ReadBytes<std::vector<uint8_t> >();
+			auto file = _SysCall::RBinaryFile::Open(launchTokenPath);
+			auto tokenBuf = file->ReadBytes<std::vector<uint8_t> >();
 			if (tokenLen == tokenBuf.size())
 			{
 				std::copy(tokenBuf.begin(), tokenBuf.end(), std::begin(token));
@@ -74,8 +76,8 @@ public:
 		{
 			std::vector<uint8_t> tokenBuf(std::begin(token), std::end(token));
 
-			auto file = SysCall::WBinaryFile::Create(launchTokenPath);
-			file.WriteBytes(tokenBuf);
+			auto file = _SysCall::WBinaryFile::Create(launchTokenPath);
+			file->WriteBytes(tokenBuf);
 		}
 	}
 
@@ -92,7 +94,14 @@ public:
 	SgxEnclave& operator=(const SgxEnclave& other) = delete;
 	SgxEnclave& operator=(SgxEnclave&& other) = delete;
 
-private:
+
+	virtual const char* GetPlatformName() const override
+	{
+		return "SGX";
+	}
+
+
+protected:
 
 	sgx_enclave_id_t m_encId;
 }; // class SgxEnclave

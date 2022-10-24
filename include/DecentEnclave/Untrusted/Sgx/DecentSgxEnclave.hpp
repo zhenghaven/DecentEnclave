@@ -21,7 +21,7 @@ namespace Sgx
 {
 
 
-class DecentEnclave :
+class DecentSgxEnclave :
 	public SgxEnclave,
 	virtual public DecentEnclaveBase
 
@@ -35,10 +35,10 @@ public:
 	using SgxBase::SgxBase;
 
 	// LCOV_EXCL_START
-	virtual ~DecentEnclave() = default;
+	virtual ~DecentSgxEnclave() = default;
 	// LCOV_EXCL_STOP
 
-}; // class DecentEnclave
+}; // class DecentSgxEnclave
 
 
 } // namespace Sgx

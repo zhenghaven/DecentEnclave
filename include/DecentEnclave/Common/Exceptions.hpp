@@ -6,7 +6,7 @@
 #pragma once
 
 
-#include <SimpleObjects/Exceptions.hpp>
+#include <SimpleObjects/Exception.hpp>
 
 #include "Internal/SimpleObj.hpp"
 
