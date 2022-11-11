@@ -28,7 +28,7 @@
 #include "../Platform/Print.hpp"
 #include "AttestationConfig.hpp"
 #include "Crypto.hpp"
-#include "EpidMessages.hpp"
+#include "EpidRaMessages.hpp"
 #include "IasRequester.hpp"
 
 
@@ -271,8 +271,16 @@ public:
 		auto iasReqBody = BuildIasReportReqBody(msg3Ref, msg3.size(), m_nonce);
 		Common::Platform::Print::StrDebug("IAS report request: " + iasReqBody);
 
-		std::string iasReport = m_iasReq->GetReport(iasReqBody);
-		Common::Platform::Print::StrDebug("IAS report: " + iasReport);
+		auto iasReportSet = m_iasReq->GetReport(iasReqBody);
+		Common::Platform::Print::StrDebug(
+			"IAS report: " + iasReportSet.get_Report().GetVal()
+		);
+		Common::Platform::Print::StrDebug(
+			"IAS Signature: " + iasReportSet.get_ReportSign().GetVal()
+		);
+		Common::Platform::Print::StrDebug(
+			"IAS Certificate: " + iasReportSet.get_IasCert().GetVal()
+		);
 	}
 
 protected:

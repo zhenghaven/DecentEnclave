@@ -16,6 +16,7 @@
 #include <sgx_quote.h>
 
 #include "../Exceptions.hpp"
+#include "EpidRaMessages.hpp"
 
 
 namespace DecentEnclave
@@ -109,7 +110,7 @@ public:
 
 	virtual std::string GetSigrl(const sgx_epid_group_id_t& gid) const = 0;
 
-	virtual std::string GetReport(const std::string& reqBody) const = 0;
+	virtual IasReportSet GetReport(const std::string& reqBody) const = 0;
 
 }; // class IasRequester
 

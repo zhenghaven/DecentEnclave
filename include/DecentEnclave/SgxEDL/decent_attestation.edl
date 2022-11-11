@@ -44,7 +44,7 @@ enclave
 		sgx_status_t ocall_decent_attest_ias_req_get_report(
 			[user_check] const void* ias_requester_ptr,
 			[in, string] const char* req_body,
-			[out] char** out_report,
+			[out] uint8_t** out_report,
 			[out] size_t* out_report_size
 		);
 

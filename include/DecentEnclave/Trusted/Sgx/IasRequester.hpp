@@ -36,7 +36,7 @@ ocall_decent_attest_ias_req_get_report(
 	sgx_status_t* retval,
 	const void* ias_requester_ptr,
 	const char* req_body,
-	char** out_report,
+	uint8_t** out_report,
 	size_t* out_report_size
 );
 
@@ -100,9 +100,11 @@ public:
 		return res;
 	}
 
-	virtual std::string GetReport(const std::string& reqBody) const override
+	virtual Common::Sgx::IasReportSet GetReport(
+		const std::string& reqBody
+	) const override
 	{
-		using _UBuffer = UntrustedBuffer<char>;
+		using _UBuffer = UntrustedBuffer<uint8_t>;
 
 		sgx_status_t edgeRet = SGX_ERROR_UNEXPECTED;
 		sgx_status_t funcRet = SGX_ERROR_UNEXPECTED;
@@ -124,8 +126,10 @@ public:
 			ocall_decent_attest_ias_req_get_sigrl
 		);
 
-		std::string res = uBuf.CopyToContainer<std::string>();
-		return res;
+		std::vector<uint8_t> iasReportSetARlp =
+			uBuf.CopyToContainer<std::vector<uint8_t> >();
+
+		return Common::Sgx::IasReportSetParser().Parse(iasReportSetARlp);
 	}
 
 private:

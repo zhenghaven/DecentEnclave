@@ -126,7 +126,9 @@ public:
 	}
 
 
-	virtual std::string GetReport(const std::string& reqBody) const override
+	virtual Common::Sgx::IasReportSet GetReport(
+		const std::string& reqBody
+	) const override
 	{
 		std::string reqFullUrl = m_iasUrl + GetIasReportUri();
 
@@ -151,6 +153,7 @@ public:
 				else if (tmp.find(GetHdrLabelCert()) == 0)
 				{
 					iasCert = ParseHeaderLine(tmp);
+					UrlUnescape(iasCert);
 				}
 
 				// If returned amount differs from the amount passed in,
@@ -189,7 +192,12 @@ public:
 			contentCallback
 		);
 
-		return respBody;
+		Common::Sgx::IasReportSet reportSet;
+		reportSet.get_Report() = respBody;
+		reportSet.get_ReportSign() = iasSign;
+		reportSet.get_IasCert() = iasCert;
+
+		return reportSet;
 	}
 
 private:
@@ -357,6 +365,24 @@ private:
 		s = s.substr(s.find_first_of(':') + 1);
 		Rtrim(Ltrim(s));
 		return s;
+	}
+
+	static void UrlUnescape(std::string& s)
+	{
+		int outLen = 0;
+		char* resStr = curl_easy_unescape(
+			nullptr, // Since curl 7.82.0, this parameter is ignored
+			s.c_str(),
+			s.size(),
+			&outLen
+		);
+		if (resStr == nullptr)
+		{
+			throw Common::Exception("Failed to do URL unescape");
+		}
+		std::copy(resStr, resStr + outLen, s.begin());
+		curl_free(resStr);
+		s.resize(outLen);
 	}
 
 	std::string m_iasUrl;

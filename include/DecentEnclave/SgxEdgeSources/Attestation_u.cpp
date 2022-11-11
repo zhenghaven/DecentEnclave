@@ -8,6 +8,7 @@
 
 #include <thread>
 
+#include <AdvancedRlp/AdvancedRlp.hpp>
 #include <sgx_ukey_exchange.h>
 #include <sgx_uae_epid.h>
 
@@ -213,12 +214,12 @@ extern "C" sgx_status_t ocall_decent_attest_ias_req_get_sigrl(
 extern "C" sgx_status_t ocall_decent_attest_ias_req_get_report(
 	const void* ias_requester_ptr,
 	const char* req_body,
-	char** out_report,
+	uint8_t** out_report,
 	size_t* out_report_size
 )
 {
 	using _IasRequester = DecentEnclave::Common::Sgx::IasRequester;
-	using _UBuffer = DecentEnclave::Untrusted::Sgx::UntrustedBuffer<char>;
+	using _UBuffer = DecentEnclave::Untrusted::Sgx::UntrustedBuffer<uint8_t>;
 
 	if (
 		ias_requester_ptr == nullptr ||
@@ -234,10 +235,11 @@ extern "C" sgx_status_t ocall_decent_attest_ias_req_get_report(
 	const _IasRequester& iasRequester =
 		*static_cast<const _IasRequester*>(ias_requester_ptr);
 
-	std::string iasReport = iasRequester.GetReport(req_body);
+	auto iasReportSet = iasRequester.GetReport(req_body);
 
-	_UBuffer uBuffer = _UBuffer::Allocate(iasReport.size());
-	std::copy(iasReport.begin(), iasReport.end(), uBuffer.m_data);
+	auto iasReportSetARlp = AdvancedRlp::GenericWriter::Write(iasReportSet);
+	_UBuffer uBuffer = _UBuffer::Allocate(iasReportSetARlp.size());
+	std::copy(iasReportSetARlp.begin(), iasReportSetARlp.end(), uBuffer.m_data);
 
 	*out_report      = uBuffer.m_data;
 	*out_report_size = uBuffer.m_size;
