@@ -14,6 +14,11 @@ extern "C" {
 
 sgx_status_t ocall_decent_enclave_print_str(const char* str);
 
+sgx_status_t ocall_decent_untrusted_buffer_delete(
+	uint8_t data_type,
+	void* ptr
+);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

@@ -37,5 +37,22 @@ public:
 }; // class Exception
 
 
+class InvalidArgumentException : public Exception
+{
+public: // static members:
+
+	using Base = Exception;
+
+public:
+
+	using Base::Base;
+
+	// LCOV_EXCL_START
+	virtual ~InvalidArgumentException() = default;
+	// LCOV_EXCL_STOP
+
+}; // class InvalidArgumentException
+
+
 } // namespace Common
 } // namespace DecentEnclave

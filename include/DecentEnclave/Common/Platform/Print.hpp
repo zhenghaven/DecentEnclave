@@ -41,6 +41,33 @@ struct Print
 #endif // DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
 	}
 
+	static void StrDebug(const std::string& str)
+	{
+#ifdef DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
+		Str("DEBUG(T): " + str + "\n");
+#else
+		Str("DEBUG(U): " + str + "\n");
+#endif // DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
+	}
+
+	static void StrInfo(const std::string& str)
+	{
+#ifdef DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
+		Str("INFO(T): " + str + "\n");
+#else
+		Str("INFO(U): " + str + "\n");
+#endif // DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
+	}
+
+	static void StrErr(const std::string& str)
+	{
+#ifdef DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
+		Str("ERROR(T): " + str + "\n");
+#else
+		Str("ERROR(U): " + str + "\n");
+#endif // DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
+	}
+
 }; // struct Print
 
 
