@@ -124,6 +124,7 @@ inline mbedTLScpp::SKey<_reqKeySizeInBits>
 		const std::string& label)
 {
 	using namespace mbedTLScpp;
+	using _Cmacer = Cmacer<_cipherType, _reqKeySizeInBits, _cipherMode>;
 
 	static constexpr std::array<uint8_t, 1> counter{0x01};
 	static constexpr std::array<uint8_t, 1> nullTerm{0x00};
@@ -135,7 +136,7 @@ inline mbedTLScpp::SKey<_reqKeySizeInBits>
 
 	// mbedTLScpp::Cmacer<_cipherType, _reqKeySizeInBits, _cipherMode>(cmacKey).
 	// Calc(deriveKey.m_key, inKey.m_key);
-	Cmacer<_cipherType, _reqKeySizeInBits, _cipherMode> macer1(CtnFullR(cmacKey));
+	_Cmacer macer1(CtnFullR(cmacKey));
 	mbedRet = mbedtls_cipher_cmac_update(
 		macer1.Get(),
 		inKey.BeginBytePtr(),
@@ -165,7 +166,7 @@ inline mbedTLScpp::SKey<_reqKeySizeInBits>
 
 	SKey<_reqKeySizeInBits> resKey;
 
-	Cmacer<_cipherType, _reqKeySizeInBits, _cipherMode> macer2(CtnFullR(deriveKey));
+	_Cmacer macer2(CtnFullR(deriveKey));
 
 	// counter
 	mbedRet = mbedtls_cipher_cmac_update(

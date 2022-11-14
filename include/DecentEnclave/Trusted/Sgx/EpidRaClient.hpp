@@ -6,19 +6,21 @@
 #pragma once
 
 
-// TODO: #ifdef DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
+#ifdef DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
 
 #include <cstdint>
 
 #include <memory>
 #include <vector>
 
+#include <AdvancedRlp/AdvancedRlp.hpp>
 #include <mbedTLScpp/SecretArray.hpp>
 #include <mbedTLScpp/Hash.hpp>
 #include <sgx_tkey_exchange.h>
 
 
 #include "../../Common/Platform/Print.hpp"
+#include "../../Common/Sgx/EpidRaMessages.hpp"
 #include "../../Common/Sgx/Exceptions.hpp"
 
 #include "decent_tkey_exchange.hpp"
@@ -78,6 +80,7 @@ public: // static members:
 		Msg1Sent,
 		Msg3Sent,
 		HandshakeDone,
+		HandshakeRefused,
 	};
 
 	using SKey128Bit = mbedTLScpp::SecretArray<uint8_t, 16>;
@@ -95,6 +98,7 @@ public:
 		m_svcProvAuth(std::move(svcProvAuth)),
 		m_mk(),
 		m_sk(),
+		m_iasReportSet(),
 		m_handshakeState(HSState::Initial)
 	{}
 
@@ -119,6 +123,7 @@ public:
 		m_svcProvAuth(std::move(other.m_svcProvAuth)),
 		m_mk(std::move(other.m_mk)),
 		m_sk(std::move(other.m_sk)),
+		m_iasReportSet(std::move(other.m_iasReportSet)),
 		m_handshakeState(other.m_handshakeState)
 	{
 		other.m_handshakeState = HSState::Initial;
@@ -128,6 +133,12 @@ public:
 	virtual bool IsHandshakeDone() const
 	{
 		return m_handshakeState == HSState::HandshakeDone;
+	}
+
+
+	virtual bool IsHandshakeRefused() const
+	{
+		return m_handshakeState == HSState::HandshakeRefused;
 	}
 
 
@@ -301,7 +312,67 @@ public:
 		return res;
 	}
 
-	// const sgx_ias_report_t& GetIasReport();
+
+	virtual void ProcMsg4(const std::vector<uint8_t>& msg4)
+	{
+		using _Cmacer = mbedTLScpp::Cmacer<
+			mbedTLScpp::CipherType::AES,
+			128,
+			mbedTLScpp::CipherMode::ECB
+		>;
+
+		static const SimpleObjects::String sk_labelVRes = "VerifyResult";
+		static const SimpleObjects::String sk_labelRepSet = "ReportSet";
+		static const SimpleObjects::String sk_labelMsgBody = "MsgBody";
+		static const SimpleObjects::String sk_labelMac = "MAC";
+
+		auto msg4Obj = AdvancedRlp::GenericParser().Parse(msg4);
+		const auto& msg4Dict = msg4Obj.AsDict();
+		const auto& msg4BodyBytesObj = msg4Dict[sk_labelMsgBody].AsBytes();
+		const auto& msg4MacBytesObj = msg4Dict[sk_labelMac].AsBytes();
+
+		std::vector<uint8_t> msg4BodyBytes(
+			msg4BodyBytesObj.cbegin(),
+			msg4BodyBytesObj.cend()
+		);
+
+		auto cmacRes = _Cmacer(mbedTLScpp::CtnFullR(m_sk)).Calc(
+			mbedTLScpp::CtnFullR(msg4BodyBytes)
+		);
+		if (
+			msg4MacBytesObj.size() != cmacRes.size() ||
+			!std::equal(
+				msg4MacBytesObj.cbegin(),
+				msg4MacBytesObj.cend(),
+				cmacRes.cbegin()
+			)
+		)
+		{
+			throw Common::Exception("Message 4 MAC verification failed");
+		}
+
+		auto msg4BodyObj = AdvancedRlp::GenericParser().Parse(msg4BodyBytes);
+		const auto& msg4BodyDict = msg4BodyObj.AsDict();
+		const auto& reportSetObj = msg4BodyDict[sk_labelRepSet].AsBytes();
+		bool vrfyRes = msg4BodyDict[sk_labelVRes].IsTrue();
+
+		std::vector<uint8_t> reportSetBytes(
+			reportSetObj.cbegin(),
+			reportSetObj.cend()
+		);
+
+		m_iasReportSet =
+			Common::Sgx::IasReportSetParser().Parse(reportSetBytes);
+
+		if (!vrfyRes)
+		{
+			m_handshakeState = HSState::HandshakeRefused;
+		}
+		else
+		{
+			m_handshakeState = HSState::HandshakeDone;
+		}
+	}
 
 
 private:
@@ -331,11 +402,6 @@ private:
 		);
 	}
 
-	// virtual void InitRaContext(const sgx_ra_config& raConfig, const sgx_ec256_public_t& pubKey);
-	// virtual void CloseRaContext();
-	// virtual bool CheckKeyDerivationFuncId(const uint16_t id) const;
-	// virtual void DeriveSharedKeys(SKey128Bit& mk, SKey128Bit& sk);
-	// virtual void GetMsg1(sgx_ra_msg1_t& msg1);
 
 	uint64_t m_enclaveId;
 	sgx_ra_context_t m_raCtx;
@@ -347,9 +413,7 @@ private:
 	SKey128Bit m_mk;
 	SKey128Bit m_sk;
 
-	// sgx_ra_config m_raConfig;
-	// sgx_ec256_public_t m_peerSignKey;
-	// sgx_ias_report_t m_iasReport;
+	Common::Sgx::IasReportSet m_iasReportSet;
 
 	HSState m_handshakeState;
 
@@ -361,4 +425,4 @@ private:
 } // namespace Trusted
 } // namespace DecentEnclave
 
-// TODO: #endif // DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
+#endif // DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED

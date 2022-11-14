@@ -6,10 +6,8 @@
 #pragma once
 
 
-/* TODO:
 #if defined(DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED) || \
 	defined(DECENT_ENCLAVE_PLATFORM_SGX_UNTRUSTED)
-*/
 
 
 #include <cstdint>
@@ -17,6 +15,7 @@
 #include <memory>
 #include <type_traits>
 
+#include <AdvancedRlp/AdvancedRlp.hpp>
 #include <cppcodec/base64_default_rfc4648.hpp>
 #include <mbedTLScpp/EcKey.hpp>
 #include <mbedTLScpp/Hkdf.hpp>
@@ -51,6 +50,7 @@ public: // static members:
 		Msg0rSent,
 		Msg2Sent,
 		HandshakeDone,
+		HandshakeRefused,
 	};
 
 	using SKey128Bit = mbedTLScpp::SecretArray<uint8_t, 16>;
@@ -107,6 +107,7 @@ public:
 		m_iasReq(std::move(iasReq)),
 		m_iasReportVrfy(std::move(iasReportVrfy)),
 		m_epidQuoteVrfy(std::move(epidQuoteVrfy)),
+		m_iasReportSet(),
 		m_handshakeState(HSState::Initial)
 	{
 		if (m_mySignKey == nullptr)
@@ -135,6 +136,7 @@ public:
 		m_iasReq(std::move(rhs.m_iasReq)),
 		m_iasReportVrfy(std::move(rhs.m_iasReportVrfy)),
 		m_epidQuoteVrfy(std::move(rhs.m_epidQuoteVrfy)),
+		m_iasReportSet(std::move(rhs.m_iasReportSet)),
 		m_handshakeState(rhs.m_handshakeState)
 	{
 		rhs.m_handshakeState = HSState::Initial;
@@ -144,6 +146,12 @@ public:
 	virtual bool IsHandshakeDone() const
 	{
 		return m_handshakeState == HSState::HandshakeDone;
+	}
+
+
+	virtual bool IsHandshakeRefused() const
+	{
+		return m_handshakeState == HSState::HandshakeRefused;
 	}
 
 
@@ -263,7 +271,7 @@ public:
 	}
 
 
-	virtual void ProcMsg3(
+	virtual std::vector<uint8_t> GetMsg4(
 		const std::vector<uint8_t>& msg3
 	)
 	{
@@ -280,29 +288,49 @@ public:
 		auto iasReqBody = BuildIasReportReqBody(msg3Ref, msg3.size(), m_nonce);
 		Platform::Print::StrDebug("IAS report request: " + iasReqBody);
 
-		auto iasReportSet = m_iasReq->GetReport(iasReqBody);
+		m_iasReportSet = m_iasReq->GetReport(iasReqBody);
 
 		Platform::Print::StrDebug(
-			"IAS report: " + iasReportSet.get_Report().GetVal()
+			"IAS report: " + m_iasReportSet.get_Report().GetVal()
 		);
 		Platform::Print::StrDebug(
-			"IAS Signature: " + iasReportSet.get_ReportSign().GetVal()
+			"IAS Signature: " + m_iasReportSet.get_ReportSign().GetVal()
 		);
 
-		m_iasReportVrfy->VerifyReportSet(
-			iasReportSet,
-			*m_epidQuoteVrfy,
-			&m_nonce
-		);
+		bool vrfySucc = false;
+		try
+		{
+			m_iasReportVrfy->VerifyReportSet(
+				m_iasReportSet,
+				*m_epidQuoteVrfy,
+				&m_nonce
+			);
+			vrfySucc = true;
+		}
+		catch(const Exception&)
+		{}
 
 		Platform::Print::StrDebug(
-			"IAS Certificate: " + iasReportSet.get_IasCert().GetVal()
+			"IAS Certificate: " + m_iasReportSet.get_IasCert().GetVal()
 		);
 
-		m_handshakeState = HSState::HandshakeDone;
+		std::vector<uint8_t> msg4 = GenMsg4(vrfySucc);
+
+		if (vrfySucc)
+		{
+			m_handshakeState = HSState::HandshakeDone;
+		}
+		else
+		{
+			m_handshakeState = HSState::HandshakeRefused;
+		}
+
+		return msg4;
 	}
 
+
 protected:
+
 
 	virtual bool ValidateExtGrpId(uint32_t extGrpId) const
 	{
@@ -439,7 +467,46 @@ protected:
 		return json;
 	}
 
+
+	std::vector<uint8_t> GenMsg4(
+		bool vrfyRes
+	)
+	{
+		using _Cmacer = mbedTLScpp::Cmacer<
+			mbedTLScpp::CipherType::AES,
+			128,
+			mbedTLScpp::CipherMode::ECB
+		>;
+
+		static const SimpleObjects::String sk_labelVRes = "VerifyResult";
+		static const SimpleObjects::String sk_labelRepSet = "ReportSet";
+		static const SimpleObjects::String sk_labelMsgBody = "MsgBody";
+		static const SimpleObjects::String sk_labelMac = "MAC";
+
+		auto msg4Body = SimpleObjects::Dict();
+		msg4Body[sk_labelVRes] = SimpleObjects::Bool(vrfyRes);
+		msg4Body[sk_labelRepSet] = SimpleObjects::Bytes(
+			AdvancedRlp::GenericWriter::Write(m_iasReportSet)
+		);
+		auto msg4BodyBytes = AdvancedRlp::GenericWriter::Write(msg4Body);
+
+		auto cmacRes = _Cmacer(mbedTLScpp::CtnFullR(m_sk)).Calc(
+			mbedTLScpp::CtnFullR(msg4BodyBytes)
+		);
+
+		auto msg4 = SimpleObjects::Dict();
+		msg4[sk_labelMsgBody] = SimpleObjects::Bytes(msg4BodyBytes);
+		msg4[sk_labelMac] = SimpleObjects::Bytes(
+			cmacRes.begin(),
+			cmacRes.end()
+		);
+
+		return AdvancedRlp::GenericWriter::Write(msg4);
+	}
+
+
 private:
+
 
 	std::shared_ptr<EcKeyPairType> m_mySignKey;
 	EcKeyPairType m_myEncKey;
@@ -453,7 +520,9 @@ private:
 	std::unique_ptr<IasRequester> m_iasReq;
 	std::unique_ptr<IasEpidReportVerifier> m_iasReportVrfy;
 	std::unique_ptr<EpidQuoteVerifier> m_epidQuoteVrfy;
+	IasReportSet m_iasReportSet;
 	HSState m_handshakeState;
+
 
 }; // class EpidRaSvcProvCore
 
@@ -462,4 +531,4 @@ private:
 } // namespace Common
 } // namespace DecentEnclave
 
-// #endif // DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED || _UNTRUSTED
+#endif // DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED || _UNTRUSTED
