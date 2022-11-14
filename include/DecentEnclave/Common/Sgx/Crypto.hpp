@@ -11,8 +11,9 @@
 
 
 #include <sgx_tcrypto.h>
-#include <mbedTLScpp/EcKey.hpp>
 #include <mbedTLScpp/Cmac.hpp>
+#include <mbedTLScpp/EcKey.hpp>
+#include <mbedTLScpp/Hash.hpp>
 
 #include "../Exceptions.hpp"
 
@@ -225,6 +226,31 @@ inline mbedTLScpp::SKey<_reqKeySizeInBits>
 
 	return resKey;
 }
+
+
+static sgx_report_data_t ReportDataFromHash(
+	const mbedTLScpp::Hash<mbedTLScpp::HashType::SHA256>& inHash
+)
+{
+	using _HashType = mbedTLScpp::Hash<mbedTLScpp::HashType::SHA256>;
+	static constexpr size_t sk_inHashSize = _HashType::sk_size;
+	static constexpr size_t sk_rpDataSize = 2 * sk_inHashSize;
+
+	sgx_report_data_t res = { { 0 } };
+
+	auto cpFunc = [](
+		uint8_t (&dst)[sk_rpDataSize],
+		const std::array<uint8_t, sk_inHashSize>& src
+	)
+	{
+		std::copy(src.begin(), src.end(), std::begin(dst));
+	};
+
+	cpFunc(res.d, inHash.m_data);
+
+	return res;
+}
+
 
 } // namespace Sgx
 } // namespace Common

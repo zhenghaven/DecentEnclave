@@ -19,16 +19,17 @@
 
 #include <cppcodec/base64_default_rfc4648.hpp>
 #include <mbedTLScpp/EcKey.hpp>
-#include <mbedTLScpp/SecretArray.hpp>
 #include <mbedTLScpp/Hkdf.hpp>
+#include <mbedTLScpp/SecretArray.hpp>
+#include <sgx_ukey_exchange.h>
 #include <SimpleJson/SimpleJson.hpp>
 #include <SimpleObjects/SimpleObjects.hpp>
-#include <sgx_ukey_exchange.h>
 
 #include "../Platform/Print.hpp"
 #include "AttestationConfig.hpp"
 #include "Crypto.hpp"
 #include "EpidRaMessages.hpp"
+#include "IasReportVerifier.hpp"
 #include "IasRequester.hpp"
 
 
@@ -89,12 +90,14 @@ public:
 	EpidRaSvcProvCore(
 		std::shared_ptr<EcKeyPairType> mySignKey,
 		sgx_spid_t spid,
-		std::unique_ptr<Common::Sgx::IasRequester> iasReq,
+		std::unique_ptr<IasRequester> iasReq,
+		std::unique_ptr<IasEpidReportVerifier> iasReportVrfy,
+		std::unique_ptr<EpidQuoteVerifier> epidQuoteVrfy,
 		mbedTLScpp::RbgInterface& randGen
 	) :
 		m_mySignKey(std::move(mySignKey)),
 		m_myEncKey(EcKeyPairType::Generate(randGen)),
-		m_peerEncrKey(),
+		m_peerEncKey(),
 		m_smk(),
 		m_mk(),
 		m_sk(),
@@ -102,6 +105,8 @@ public:
 		m_spid(spid),
 		m_nonce(BuildNonce(randGen)),
 		m_iasReq(std::move(iasReq)),
+		m_iasReportVrfy(std::move(iasReportVrfy)),
+		m_epidQuoteVrfy(std::move(epidQuoteVrfy)),
 		m_handshakeState(HSState::Initial)
 	{
 		if (m_mySignKey == nullptr)
@@ -120,7 +125,7 @@ public:
 	EpidRaSvcProvCore(EpidRaSvcProvCore&& rhs) :
 		m_mySignKey(std::move(rhs.m_mySignKey)),
 		m_myEncKey(std::move(rhs.m_myEncKey)),
-		m_peerEncrKey(std::move(rhs.m_peerEncrKey)),
+		m_peerEncKey(std::move(rhs.m_peerEncKey)),
 		m_smk(std::move(rhs.m_smk)),
 		m_mk(std::move(rhs.m_mk)),
 		m_sk(std::move(rhs.m_sk)),
@@ -128,6 +133,8 @@ public:
 		m_spid(std::move(rhs.m_spid)),
 		m_nonce(std::move(rhs.m_nonce)),
 		m_iasReq(std::move(rhs.m_iasReq)),
+		m_iasReportVrfy(std::move(rhs.m_iasReportVrfy)),
+		m_epidQuoteVrfy(std::move(rhs.m_epidQuoteVrfy)),
 		m_handshakeState(rhs.m_handshakeState)
 	{
 		rhs.m_handshakeState = HSState::Initial;
@@ -174,8 +181,8 @@ public:
 		mbedTLScpp::RbgInterface& randGen
 	)
 	{
-		using Hasher = mbedTLScpp::Hasher<mbedTLScpp::HashType::SHA256>;
-		using Cmacer = mbedTLScpp::Cmacer<
+		using _Hasher = mbedTLScpp::Hasher<mbedTLScpp::HashType::SHA256>;
+		using _Cmacer = mbedTLScpp::Cmacer<
 			mbedTLScpp::CipherType::AES,
 			128,
 			mbedTLScpp::CipherMode::ECB
@@ -184,23 +191,25 @@ public:
 		int mbedRet = 0;
 		std::vector<uint8_t> res;
 
+		sgx_ec256_public_t myEncSgxKey;
+		ImportEcKey(myEncSgxKey, m_myEncKey);
+
 		SetPeerEncrPubKey(msg1.g_a, randGen);
+		m_epidQuoteVrfy->SetStandardReportData(GenStdReportData(myEncSgxKey));
 
 		res.resize(sizeof(sgx_ra_msg2_t));
 		sgx_ra_msg2_t& msg2Ref = *reinterpret_cast<sgx_ra_msg2_t*>(res.data());
 
-		sgx_ec256_public_t myEncSgxKey;
-		ImportEcKey(myEncSgxKey, m_myEncKey);
 		msg2Ref.g_b = myEncSgxKey;
 		msg2Ref.spid = m_spid;
 		msg2Ref.quote_type = AttestationConfig::sk_quoteTypeLinkable;
 		msg2Ref.kdf_id = AttestationConfig::sk_kdfIdDefault;
 
-		auto hashToBeSigned = Hasher().Calc(
+		auto hashToBeSigned = _Hasher().Calc(
 			mbedTLScpp::CtnFullR(myEncSgxKey.gx),
 			mbedTLScpp::CtnFullR(myEncSgxKey.gy),
-			mbedTLScpp::CtnFullR(m_peerEncrKey.gx),
-			mbedTLScpp::CtnFullR(m_peerEncrKey.gy)
+			mbedTLScpp::CtnFullR(m_peerEncKey.gx),
+			mbedTLScpp::CtnFullR(m_peerEncKey.gy)
 		);
 
 		mbedTLScpp::BigNum rBN;
@@ -232,7 +241,7 @@ public:
 		std::vector<uint8_t> tmpCmacData(cmac_size);
 		std::memcpy(tmpCmacData.data(), &(msg2Ref.g_b), tmpCmacData.size());
 
-		auto cmacRes = Cmacer(mbedTLScpp::CtnFullR(m_smk)).Calc(
+		auto cmacRes = _Cmacer(mbedTLScpp::CtnFullR(m_smk)).Calc(
 			mbedTLScpp::CtnFullR(tmpCmacData)
 		);
 		static_assert(
@@ -242,7 +251,7 @@ public:
 		std::memcpy(msg2Ref.mac, cmacRes.data(), cmacRes.size());
 
 		std::string sigrlB64 = m_iasReq->GetSigrl(msg1.gid);
-		Common::Platform::Print::StrDebug("SigRL: " + sigrlB64);
+		Platform::Print::StrDebug("SigRL: " + sigrlB64);
 		std::vector<uint8_t> sigRL =
 			cppcodec::base64_rfc4648::decode(sigrlB64);
 
@@ -260,7 +269,7 @@ public:
 	{
 		if (msg3.size() < sizeof(sgx_ra_msg3_t))
 		{
-			throw Common::InvalidArgumentException(
+			throw InvalidArgumentException(
 				"msg3 is too short (size = " + std::to_string(msg3.size()) + ")"
 			);
 		}
@@ -269,18 +278,28 @@ public:
 			*reinterpret_cast<const sgx_ra_msg3_t*>(msg3.data());
 
 		auto iasReqBody = BuildIasReportReqBody(msg3Ref, msg3.size(), m_nonce);
-		Common::Platform::Print::StrDebug("IAS report request: " + iasReqBody);
+		Platform::Print::StrDebug("IAS report request: " + iasReqBody);
 
 		auto iasReportSet = m_iasReq->GetReport(iasReqBody);
-		Common::Platform::Print::StrDebug(
+
+		Platform::Print::StrDebug(
 			"IAS report: " + iasReportSet.get_Report().GetVal()
 		);
-		Common::Platform::Print::StrDebug(
+		Platform::Print::StrDebug(
 			"IAS Signature: " + iasReportSet.get_ReportSign().GetVal()
 		);
-		Common::Platform::Print::StrDebug(
+
+		m_iasReportVrfy->VerifyReportSet(
+			iasReportSet,
+			*m_epidQuoteVrfy,
+			&m_nonce
+		);
+
+		Platform::Print::StrDebug(
 			"IAS Certificate: " + iasReportSet.get_IasCert().GetVal()
 		);
+
+		m_handshakeState = HSState::HandshakeDone;
 	}
 
 protected:
@@ -292,14 +311,14 @@ protected:
 
 
 	void SetPeerEncrPubKey(
-		const sgx_ec256_public_t & inEncrPubKey,
+		const sgx_ec256_public_t & inEncPubKey,
 		mbedTLScpp::RbgInterface& randGen
 	)
 	{
-		m_peerEncrKey = inEncrPubKey;
+		m_peerEncKey = inEncPubKey;
 
 		EcPubKeyType peerEncKey(mbedTLScpp::EcType::SECP256R1);
-		ExportEcKey(peerEncKey, m_peerEncrKey);
+		ExportEcKey(peerEncKey, m_peerEncKey);
 
 		auto sharedKeyInt =
 			m_myEncKey.DeriveSharedKeyInBigNum(peerEncKey, randGen);
@@ -317,6 +336,12 @@ protected:
 		);
 
 
+		// Reference: https://community.intel.com/t5/Intel-Software-Guard-Extensions/Key-Derivation-MK-SK-VK-SMK/m-p/1085912
+		// Reference: https://www.intel.com/content/www/us/en/developer/articles/code-sample/software-guard-extensions-remote-attestation-end-to-end-example.html
+		// SMK (SIGMA protocol)
+		// SK (Signing Key/Symmetric Key)
+		// MK (Master Key/Masking Key)
+		// VK (Verification Key)
 		m_smk = Ckdf<mbedTLScpp::CipherType::AES, 128, mbedTLScpp::CipherMode::ECB>(
 			CtnFullR(sharedKey), "SMK"
 		);
@@ -330,6 +355,26 @@ protected:
 			CtnFullR(sharedKey), "VK"
 		);
 	}
+
+
+	sgx_report_data_t GenStdReportData(const sgx_ec256_public_t& myEncSgxKey)
+	{
+		using _Hasher = mbedTLScpp::Hasher<mbedTLScpp::HashType::SHA256>;
+
+		// Verify the report_data in the Quote matches the expected value.
+		// The first 32 bytes of report_data are SHA256 HASH of {ga|gb|vk}.
+		// The second 32 bytes of report_data are set to zero.
+		auto reportDataHash = _Hasher().Calc(
+			mbedTLScpp::CtnFullR(m_peerEncKey.gx),
+			mbedTLScpp::CtnFullR(m_peerEncKey.gy),
+			mbedTLScpp::CtnFullR(myEncSgxKey.gx),
+			mbedTLScpp::CtnFullR(myEncSgxKey.gy),
+			mbedTLScpp::CtnFullR(m_vk)
+		);
+
+		return ReportDataFromHash(reportDataHash);
+	}
+
 
 	static std::string BuildIasReportReqBody(
 		const sgx_ra_msg3_t& msg3,
@@ -376,7 +421,7 @@ protected:
 		}
 		else
 		{
-			Common::Platform::Print::StrDebug("PSE is not enabled during RA");
+			Platform::Print::StrDebug("PSE is not enabled during RA");
 		}
 
 		auto jsonObj = SimpleObjects::Dict();
@@ -398,14 +443,16 @@ private:
 
 	std::shared_ptr<EcKeyPairType> m_mySignKey;
 	EcKeyPairType m_myEncKey;
-	sgx_ec256_public_t m_peerEncrKey;
+	sgx_ec256_public_t m_peerEncKey;
 	SKey128Bit m_smk;
 	SKey128Bit m_mk;
 	SKey128Bit m_sk;
 	SKey128Bit m_vk;
 	sgx_spid_t m_spid;
 	std::string m_nonce;
-	std::unique_ptr<Common::Sgx::IasRequester> m_iasReq;
+	std::unique_ptr<IasRequester> m_iasReq;
+	std::unique_ptr<IasEpidReportVerifier> m_iasReportVrfy;
+	std::unique_ptr<EpidQuoteVerifier> m_epidQuoteVrfy;
 	HSState m_handshakeState;
 
 }; // class EpidRaSvcProvCore

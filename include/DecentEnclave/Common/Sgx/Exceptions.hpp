@@ -10,9 +10,12 @@
 	defined(DECENT_ENCLAVE_PLATFORM_SGX_UNTRUSTED)
 
 
-#include "../Exceptions.hpp"
+#include <type_traits>
 
 #include <sgx_error.h>
+#include <SimpleObjects/ToString.hpp>
+
+#include "../Exceptions.hpp"
 
 
 namespace DecentEnclave
@@ -196,34 +199,20 @@ class SgxRuntimeError : public Exception
 public: // static members:
 
 
-	std::string ErrCodeToStr(sgx_status_t errCode)
+	static std::string ErrCodeToStr(sgx_status_t errCode)
 	{
-		static constexpr char alphabet[] = "0123456789ABCDEF";
-		using ErrCodeValType = uint32_t;
-		static constexpr size_t errCodeValSize = sizeof(ErrCodeValType);
-		static constexpr size_t errCodeValNibbleSize = errCodeValSize * 2;
-		static constexpr size_t errCodeValBitsSize = errCodeValSize * 8;
-		static constexpr size_t NibbleBitsSize = 4;
+		using _UnderType = std::underlying_type<sgx_status_t>::type;
 
-		ErrCodeValType errCodeVal = static_cast<ErrCodeValType>(errCode);
-		std::string res;
-		res.reserve(errCodeValNibbleSize);
-
-		for (
-			size_t i = errCodeValBitsSize; // start from the MSB
-			i > 0; // stop at the LSB
-			i -= NibbleBitsSize // move to the next nibble
-		)
-		{
-			char ch = alphabet[(errCodeVal >> (i - NibbleBitsSize)) & 0x0F];
-			res += ch;
-		}
-
-		return "0x" + res;
+		std::string errStr;
+		SimpleObjects::Internal::PrimitiveToHEX<true, char>(
+			std::back_inserter(errStr),
+			static_cast<_UnderType>(errCode)
+		);
+		return errStr;
 	}
 
 
-	std::string ConstructErrorMsg(
+	static std::string ConstructErrorMsg(
 		sgx_status_t errCode,
 		const std::string & funcName
 	)
