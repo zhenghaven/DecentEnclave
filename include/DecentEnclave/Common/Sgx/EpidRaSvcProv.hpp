@@ -291,16 +291,14 @@ public:
 		m_iasReportSet = m_iasReq->GetReport(iasReqBody);
 
 		Platform::Print::StrDebug(
-			"IAS report: " + m_iasReportSet.get_Report().GetVal()
-		);
-		Platform::Print::StrDebug(
-			"IAS Signature: " + m_iasReportSet.get_ReportSign().GetVal()
+			"IAS report: " +
+			GetStrFromSimpleBytes(m_iasReportSet.get_Report())
 		);
 
 		bool vrfySucc = false;
 		try
 		{
-			m_iasReportVrfy->VerifyReportSet(
+			m_iasReportVrfy->VerifyAndReduceReportSet(
 				m_iasReportSet,
 				*m_epidQuoteVrfy,
 				&m_nonce
@@ -311,7 +309,8 @@ public:
 		{}
 
 		Platform::Print::StrDebug(
-			"IAS Certificate: " + m_iasReportSet.get_IasCert().GetVal()
+			"IAS Certificate: " +
+			GetStrFromSimpleBytes(m_iasReportSet.get_IasCert())
 		);
 
 		std::vector<uint8_t> msg4 = GenMsg4(vrfySucc);
@@ -486,7 +485,7 @@ protected:
 		auto msg4Body = SimpleObjects::Dict();
 		msg4Body[sk_labelVRes] = SimpleObjects::Bool(vrfyRes);
 		msg4Body[sk_labelRepSet] = SimpleObjects::Bytes(
-			AdvancedRlp::GenericWriter::Write(m_iasReportSet)
+			SimpleRlp::WriterGeneric::Write(m_iasReportSet)
 		);
 		auto msg4BodyBytes = AdvancedRlp::GenericWriter::Write(msg4Body);
 

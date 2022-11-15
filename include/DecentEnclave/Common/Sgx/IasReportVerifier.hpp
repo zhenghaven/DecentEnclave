@@ -173,7 +173,7 @@ public:
 	virtual ~IasEpidReportVerifier() = default;
 
 
-	virtual void VerifyReportSet(
+	virtual void VerifyAndReduceReportSet(
 		IasReportSet& reportSet,
 		EpidQuoteVerifier& quoteVerifier,
 		const std::string* nonce = nullptr
@@ -181,22 +181,17 @@ public:
 	{
 		ShrinkCertChain(reportSet);
 
+		std::string certChainStr =
+			GetStrFromSimpleBytes(reportSet.get_IasCert());
 		mbedTLScpp::X509Cert certChain =
-			mbedTLScpp::X509Cert::FromPEM(reportSet.get_IasCert().GetVal());
+			mbedTLScpp::X509Cert::FromPEM(certChainStr);
 
 		VerifyCert(reportSet, certChain);
 
-		std::vector<uint8_t> signature =
-			cppcodec::base64_rfc4648::decode<
-				std::vector<uint8_t>,
-				std::string
-			>(reportSet.get_ReportSign().GetVal());
+		VerifySign(reportSet, certChain);
 
-		VerifySign(reportSet, certChain, signature);
-
-		auto report = SimpleJson::GenericObjectParser().Parse(
-			reportSet.get_Report().GetVal()
-		);
+		std::string reportStr = GetStrFromSimpleBytes(reportSet.get_Report());
+		auto report = SimpleJson::GenericObjectParser().Parse(reportStr);
 		const auto& reportDict = report.AsDict();
 
 		VerifyReport(reportSet, reportDict, nonce);
@@ -274,10 +269,15 @@ protected:
 
 	virtual void ShrinkCertChain(IasReportSet& reportSet) const
 	{
+		std::string certChainStr =
+			GetStrFromSimpleBytes(reportSet.get_IasCert());
+
 		mbedTLScpp::X509Cert certChain =
-			mbedTLScpp::X509Cert::FromPEM(reportSet.get_IasCert().GetVal());
+			mbedTLScpp::X509Cert::FromPEM(certChainStr);
 		certChain.ShrinkChain(GetRootCaCert());
-		reportSet.get_IasCert() = certChain.GetPemChain();
+		certChainStr = certChain.GetPemChain();
+
+		reportSet.get_IasCert() = GetSimpleBytesFromStr(certChainStr);
 	}
 
 
@@ -324,8 +324,7 @@ protected:
 
 	virtual void VerifySign(
 		const IasReportSet& reportSet,
-		mbedTLScpp::X509Cert& parsedCertChain,
-		const std::vector<uint8_t>& parsedSign
+		mbedTLScpp::X509Cert& parsedCertChain
 	)
 	{
 		using _Hasher = mbedTLScpp::Hasher<mbedTLScpp::HashType::SHA256>;
@@ -341,7 +340,7 @@ protected:
 			{
 				parsedCertChain.BorrowPublicKey().VerifyDerSign(
 					hash,
-					mbedTLScpp::CtnFullR(parsedSign)
+					mbedTLScpp::CtnFullR(reportSet.get_ReportSign().GetVal())
 				);
 				// At this point, signature is verified successfully
 				return;

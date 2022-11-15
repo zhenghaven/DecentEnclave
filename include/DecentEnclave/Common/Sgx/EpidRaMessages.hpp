@@ -11,7 +11,7 @@
 #include <tuple>
 
 #include <sgx_tcrypto.h>
-#include <AdvancedRlp/AdvancedRlp.hpp>
+#include <SimpleRlp/SimpleRlp.hpp>
 
 #if defined(DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED) || \
 	defined(DECENT_ENCLAVE_PLATFORM_SGX_UNTRUSTED)
@@ -49,16 +49,16 @@ namespace Sgx
 
 using IasReportSetCore = std::tuple<
 	std::pair<
-		SimpleObjects::StrKey<SIMOBJ_KSTR("ReportSign")>,
-		SimpleObjects::String
-	>,
-	std::pair<
 		SimpleObjects::StrKey<SIMOBJ_KSTR("IasCert")>,
-		SimpleObjects::String
+		SimpleObjects::Bytes
 	>,
 	std::pair<
 		SimpleObjects::StrKey<SIMOBJ_KSTR("Report")>,
-		SimpleObjects::String
+		SimpleObjects::Bytes
+	>,
+	std::pair<
+		SimpleObjects::StrKey<SIMOBJ_KSTR("ReportSign")>,
+		SimpleObjects::Bytes
 	>
 >;
 
@@ -75,32 +75,32 @@ public:
 
 	using Base::Base;
 
-	SimpleObjects::String& get_ReportSign()
+	SimpleObjects::Bytes& get_ReportSign()
 	{
 		return Base::get<SimpleObjects::StrKey<SIMOBJ_KSTR("ReportSign")> >();
 	}
 
-	const SimpleObjects::String& get_ReportSign() const
+	const SimpleObjects::Bytes& get_ReportSign() const
 	{
 		return Base::get<SimpleObjects::StrKey<SIMOBJ_KSTR("ReportSign")> >();
 	}
 
-	SimpleObjects::String& get_IasCert()
+	SimpleObjects::Bytes& get_IasCert()
 	{
 		return Base::get<SimpleObjects::StrKey<SIMOBJ_KSTR("IasCert")> >();
 	}
 
-	const SimpleObjects::String& get_IasCert() const
+	const SimpleObjects::Bytes& get_IasCert() const
 	{
 		return Base::get<SimpleObjects::StrKey<SIMOBJ_KSTR("IasCert")> >();
 	}
 
-	SimpleObjects::String& get_Report()
+	SimpleObjects::Bytes& get_Report()
 	{
 		return Base::get<SimpleObjects::StrKey<SIMOBJ_KSTR("Report")> >();
 	}
 
-	const SimpleObjects::String& get_Report() const
+	const SimpleObjects::Bytes& get_Report() const
 	{
 		return Base::get<SimpleObjects::StrKey<SIMOBJ_KSTR("Report")> >();
 	}
@@ -110,26 +110,44 @@ public:
 
 using IasReportSetParserCore = std::tuple<
 	std::pair<
-		SimpleObjects::StrKey<SIMOBJ_KSTR("ReportSign")>,
-		AdvancedRlp::CatStringParser
-	>,
-	std::pair<
 		SimpleObjects::StrKey<SIMOBJ_KSTR("IasCert")>,
-		AdvancedRlp::CatStringParser
+		SimpleRlp::BytesParser
 	>,
 	std::pair<
 		SimpleObjects::StrKey<SIMOBJ_KSTR("Report")>,
-		AdvancedRlp::CatStringParser
+		SimpleRlp::BytesParser
+	>,
+	std::pair<
+		SimpleObjects::StrKey<SIMOBJ_KSTR("ReportSign")>,
+		SimpleRlp::BytesParser
 	>
 >;
 
 
-using IasReportSetParser = AdvancedRlp::CatStaticDictParserT<
+using IasReportSetParser = SimpleRlp::StaticDictParserT<
 	IasReportSetParserCore,
 	false, /* No missing items allowed */
 	false, /* No extra items allowed */
 	IasReportSet
 >;
+
+
+inline std::string GetStrFromSimpleBytes(const SimpleObjects::Bytes& b)
+{
+	return std::string(
+		reinterpret_cast<const char*>(b.data()),
+		reinterpret_cast<const char*>(b.data() + b.size())
+	);
+}
+
+
+inline SimpleObjects::Bytes GetSimpleBytesFromStr(const std::string& s)
+{
+	return SimpleObjects::Bytes(
+		reinterpret_cast<const uint8_t*>(s.data()),
+		reinterpret_cast<const uint8_t*>(s.data() + s.size())
+	);
+}
 
 
 } // namespace Sgx

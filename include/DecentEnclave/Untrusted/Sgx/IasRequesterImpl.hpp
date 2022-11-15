@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 
+#include <cppcodec/base64_rfc4648.hpp>
 #include <cppcodec/hex_lower.hpp>
 #include <curl/curl.h>
 #include <sgx_report.h>
@@ -193,9 +194,16 @@ public:
 		);
 
 		Common::Sgx::IasReportSet reportSet;
-		reportSet.get_Report() = respBody;
-		reportSet.get_ReportSign() = iasSign;
-		reportSet.get_IasCert() = iasCert;
+
+		reportSet.get_Report() = Common::Sgx::GetSimpleBytesFromStr(respBody);
+
+		std::vector<uint8_t> reportSignBytes =
+			cppcodec::base64_rfc4648::decode(iasSign);
+		reportSet.get_ReportSign() = SimpleObjects::Bytes(
+			std::move(reportSignBytes)
+		);
+
+		reportSet.get_IasCert() = Common::Sgx::GetSimpleBytesFromStr(iasCert);
 
 		return reportSet;
 	}

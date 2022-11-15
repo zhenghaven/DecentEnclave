@@ -8,9 +8,9 @@
 
 #include <thread>
 
-#include <AdvancedRlp/AdvancedRlp.hpp>
 #include <sgx_ukey_exchange.h>
 #include <sgx_uae_epid.h>
+#include <SimpleRlp/SimpleRlp.hpp>
 
 #include "../Common/Platform/Print.hpp"
 #include "../Common/Sgx/IasRequester.hpp"
@@ -237,7 +237,7 @@ extern "C" sgx_status_t ocall_decent_attest_ias_req_get_report(
 
 	auto iasReportSet = iasRequester.GetReport(req_body);
 
-	auto iasReportSetARlp = AdvancedRlp::GenericWriter::Write(iasReportSet);
+	auto iasReportSetARlp = SimpleRlp::WriterGeneric::Write(iasReportSet);
 	_UBuffer uBuffer = _UBuffer::Allocate(iasReportSetARlp.size());
 	std::copy(iasReportSetARlp.begin(), iasReportSetARlp.end(), uBuffer.m_data);
 
