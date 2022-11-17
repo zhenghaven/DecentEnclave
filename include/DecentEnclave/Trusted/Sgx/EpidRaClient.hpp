@@ -184,11 +184,11 @@ public:
 				&funcRet,
 				&res.extended_grp_id
 			);
-		DECENT_ENCLAVE_CHECK_SGX_RUNTIME_ERROR(
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(
 			edgeRet,
 			ocall_decent_attest_get_extended_epid_grp_id
 		);
-		DECENT_ENCLAVE_CHECK_SGX_RUNTIME_ERROR(
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(
 			funcRet,
 			ocall_decent_attest_get_extended_epid_grp_id
 		);
@@ -225,7 +225,7 @@ public:
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 		sgxRet = sgx_create_pse_session();
-		DECENT_ENCLAVE_CHECK_SGX_RUNTIME_ERROR(
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(
 			sgxRet,
 			sgx_create_pse_session
 		);
@@ -236,7 +236,7 @@ public:
 			repDataFunc,
 			&m_raCtx
 		);
-		DECENT_ENCLAVE_CHECK_SGX_RUNTIME_ERROR(
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(
 			sgxRet,
 			decent_ra_init
 		);
@@ -256,11 +256,11 @@ public:
 			m_raCtx,
 			&res
 		);
-		DECENT_ENCLAVE_CHECK_SGX_RUNTIME_ERROR(
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(
 			sgxRet,
 			ocall_decent_attest_get_msg1
 		);
-		DECENT_ENCLAVE_CHECK_SGX_RUNTIME_ERROR(
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(
 			funcRet,
 			ocall_decent_attest_get_msg1
 		);
@@ -294,11 +294,11 @@ public:
 			&(uBuf.m_data),
 			&(uBuf.m_size)
 		);
-		DECENT_ENCLAVE_CHECK_SGX_RUNTIME_ERROR(
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(
 			sgxRet,
 			ocall_decent_attest_get_msg3
 		);
-		DECENT_ENCLAVE_CHECK_SGX_RUNTIME_ERROR(
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(
 			funcRet,
 			ocall_decent_attest_get_msg3
 		);
@@ -386,7 +386,7 @@ private:
 			SGX_RA_KEY_SK,
 			reinterpret_cast<sgx_ec_key_128bit_t*>(m_sk.data())
 		);
-		DECENT_ENCLAVE_CHECK_SGX_RUNTIME_ERROR(
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(
 			sgxRet,
 			decent_ra_get_keys
 		);
@@ -396,7 +396,7 @@ private:
 			SGX_RA_KEY_MK,
 			reinterpret_cast<sgx_ec_key_128bit_t*>(m_mk.data())
 		);
-		DECENT_ENCLAVE_CHECK_SGX_RUNTIME_ERROR(
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(
 			sgxRet,
 			decent_ra_get_keys
 		);

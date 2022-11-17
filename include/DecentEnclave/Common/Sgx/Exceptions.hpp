@@ -244,7 +244,7 @@ private:
 }; // class SgxRuntimeError
 
 
-#define DECENT_ENCLAVE_CHECK_SGX_RUNTIME_ERROR(VAL, FUNC) \
+#define DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(VAL, FUNC) \
 	{ \
 		sgx_status_t decentEnclaveChkRtErr = (VAL); \
 		if (SGX_SUCCESS != decentEnclaveChkRtErr) \

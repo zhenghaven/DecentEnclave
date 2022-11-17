@@ -87,11 +87,11 @@ public:
 			&(uBuf.m_data),
 			&(uBuf.m_size)
 		);
-		DECENT_ENCLAVE_CHECK_SGX_RUNTIME_ERROR(
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(
 			edgeRet,
 			ocall_decent_attest_ias_req_get_sigrl
 		);
-		DECENT_ENCLAVE_CHECK_SGX_RUNTIME_ERROR(
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(
 			funcRet,
 			ocall_decent_attest_ias_req_get_sigrl
 		);
@@ -117,11 +117,11 @@ public:
 			&(uBuf.m_data),
 			&(uBuf.m_size)
 		);
-		DECENT_ENCLAVE_CHECK_SGX_RUNTIME_ERROR(
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(
 			edgeRet,
 			ocall_decent_attest_ias_req_get_sigrl
 		);
-		DECENT_ENCLAVE_CHECK_SGX_RUNTIME_ERROR(
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(
 			funcRet,
 			ocall_decent_attest_ias_req_get_sigrl
 		);

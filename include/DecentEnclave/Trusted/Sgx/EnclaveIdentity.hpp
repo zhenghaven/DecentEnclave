@@ -30,7 +30,7 @@ struct EnclaveIdentity
 	{
 		sgx_report_t res;
 		sgx_status_t sgxRet = sgx_create_report(nullptr, nullptr, &res);
-		DECENT_ENCLAVE_CHECK_SGX_RUNTIME_ERROR(sgxRet, sgx_create_report);
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(sgxRet, sgx_create_report);
 
 		return res;
 	}

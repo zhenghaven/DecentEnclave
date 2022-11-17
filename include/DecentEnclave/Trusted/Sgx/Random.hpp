@@ -37,7 +37,7 @@ public:
 			reinterpret_cast<unsigned char*>(buf),
 			size
 		);
-		DECENT_ENCLAVE_CHECK_SGX_RUNTIME_ERROR(
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(
 			sgxRet,
 			"sgx_read_rand"
 		);
