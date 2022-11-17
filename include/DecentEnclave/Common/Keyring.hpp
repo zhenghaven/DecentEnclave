@@ -9,6 +9,7 @@
 #include <atomic>
 #include <functional>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <type_traits>
@@ -31,7 +32,6 @@ class Keyring
 public: // static members:
 
 	using KeyReference = std::reference_wrapper<const KeyringKey>;
-	using PKeyType = typename KeyringKey::PKeyType;
 
 
 	/**
@@ -59,7 +59,7 @@ public:
 	virtual ~Keyring() = default;
 
 
-	const PKeyType& operator[](const std::string& keyName) const
+	const KeyringKey& operator[](const std::string& keyName) const
 	{
 		auto it = m_keyNameMap.find(keyName);
 		if (it == m_keyNameMap.end())
@@ -67,11 +67,11 @@ public:
 			throw Exception("Keyring - Key name not found.");
 		}
 
-		return it->second.get().GetPkey();
+		return it->second.get();
 	}
 
 
-	const PKeyType& operator[](const SimpleObjects::Bytes& keyHash) const
+	const KeyringKey& operator[](const SimpleObjects::Bytes& keyHash) const
 	{
 		auto it = m_keyHashMap.find(keyHash);
 		if (it == m_keyHashMap.end())
@@ -79,7 +79,7 @@ public:
 			throw Exception("Keyring - Key hash not found.");
 		}
 
-		return it->second.get().GetPkey();
+		return it->second.get();
 	}
 
 
@@ -147,7 +147,7 @@ public:
 	>
 	void RegisterKey()
 	{
-		const KeyringKey& key = T::GetInstance();
+		const KeyringKey& key = T::BuildInstance();
 
 		RegisterKey(key.GetName(), key);
 	}
@@ -235,6 +235,7 @@ class DecentKey_##KEY_NAME : \
 	public ::DecentEnclave::Common::KeyringKey \
 { \
 public: \
+	friend class ::DecentEnclave::Common::Keyring; \
 	static_assert( \
 		std::is_base_of<::mbedTLScpp::PKeyBase<>, PUB_KEY_TYPE>::value, \
 		#PUB_KEY_TYPE " must be a child type of mbedTLScpp::PKeyBase<>" \
@@ -245,8 +246,10 @@ public: \
 	); \
 	static const DecentKey_##KEY_NAME& GetInstance() \
 	{ \
-		static DecentKey_##KEY_NAME s_inst; \
-		return s_inst; \
+		BuildInstance().CheckRegistration( \
+			::DecentEnclave::Common::Keyring::GetInstance() \
+		); \
+		return BuildInstance(); \
 	} \
 	static void Register() \
 	{ \
@@ -255,30 +258,38 @@ public: \
 	} \
 	static const KEY_TYPE& GetKey() \
 	{ \
-		const auto& kr = ::DecentEnclave::Common::Keyring::GetInstance(); \
-		GetInstance().CheckRegistration(kr); \
-		return GetInstance().m_key; \
+		return GetInstance().m_keyRef; \
 	} \
 	static const PUB_KEY_TYPE& GetPubKey() \
 	{ \
-		const auto& kr = ::DecentEnclave::Common::Keyring::GetInstance(); \
-		GetInstance().CheckRegistration(kr); \
-		return GetInstance().m_key; \
+		return GetInstance().m_keyRef; \
+	} \
+	static std::shared_ptr<KEY_TYPE> GetKeySharedPtr() \
+	{ \
+		return GetInstance().m_keySharedPtr; \
 	} \
 private: \
 	static KEY_TYPE ConstructKey(); \
+	static const DecentKey_##KEY_NAME& BuildInstance() \
+	{ \
+		static DecentKey_##KEY_NAME s_inst; \
+		return s_inst; \
+	} \
 	DecentKey_##KEY_NAME() : \
 		m_name(#KEY_NAME), \
-		m_key(ConstructKey()) \
+		m_keySharedPtr(std::make_shared<KEY_TYPE>(ConstructKey())), \
+		m_keyRef(*m_keySharedPtr) \
 	{} \
 	std::string m_name; \
-	KEY_TYPE m_key; \
-public: \
-	virtual ~DecentKey_##KEY_NAME() = default; \
+	std::shared_ptr<KEY_TYPE> m_keySharedPtr; \
+	KEY_TYPE& m_keyRef; \
+protected: \
 	virtual const PKeyType& GetPkey() const override \
 	{ \
-		return m_key; \
+		return m_keyRef; \
 	} \
+public: \
+	virtual ~DecentKey_##KEY_NAME() = default; \
 	virtual const std::string& GetName() const override \
 	{ \
 		return m_name; \

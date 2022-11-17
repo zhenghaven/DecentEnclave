@@ -93,7 +93,8 @@ protected:
 		if (!sk_isRegistered)
 		{
 			throw Exception(
-				"KeyringKey must be registered to a Keyring before use"
+				"Key named " + GetName()+
+				" must be registered to a Keyring before use"
 			);
 		}
 	}

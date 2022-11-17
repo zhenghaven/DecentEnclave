@@ -101,6 +101,32 @@ inline void ExportEcKey(
 }
 
 
+template<typename _EcKeyObjTrait>
+inline void ExportEcKey(
+	mbedTLScpp::EcKeyPairBase<_EcKeyObjTrait>& outKey,
+	const sgx_ec256_private_t& inKey
+)
+{
+	if (outKey.GetEcType() != mbedTLScpp::EcType::SECP256R1)
+	{
+		throw InvalidArgumentException(
+			"SGX SDK only supports EC key of type SECP256R1"
+		);
+	}
+
+	mbedtls_ecp_keypair* ecCtx = outKey.GetEcContext();
+	mbedtls_mpi& ecD = ecCtx->MBEDTLS_PRIVATE(d);
+
+	int mbedRet = 0;
+	mbedRet = mbedtls_mpi_read_binary_le(&ecD, inKey.r, sizeof(inKey.r));
+	mbedTLScpp::CheckMbedTlsIntRetVal(
+		mbedRet,
+		"mbedtls_mpi_read_binary_le",
+		"DecentEnclave::Common::Sgx::ExportEcKey"
+	);
+}
+
+
 /**
  * \brief  Cipher-based Key Derivation Function (CKDF). Based on the the key
  *         derivation function used in SGX RA.
