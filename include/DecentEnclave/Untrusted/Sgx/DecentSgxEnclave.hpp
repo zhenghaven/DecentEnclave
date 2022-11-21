@@ -38,6 +38,18 @@ public:
 	virtual ~DecentSgxEnclave() = default;
 	// LCOV_EXCL_STOP
 
+#ifdef _MSC_VER
+// mitigating MSVC compiler bug:
+// https://stackoverflow.com/questions/469508/visual-studio-compiler-warning-c4250-class1-inherits-class2member-via-d
+// https://stackoverflow.com/questions/6864550/c-inheritance-via-dominance-warning
+	virtual const char* GetPlatformName() const override
+	{
+		return SgxBase::GetPlatformName();
+	}
+#else // _MSC_VER
+	using SgxBase::GetPlatformName;
+#endif // _MSC_VER
+
 }; // class DecentSgxEnclave
 
 
@@ -46,4 +58,3 @@ public:
 } // namespace DecentEnclave
 
 #endif // DECENT_ENCLAVE_PLATFORM_SGX_UNTRUSTED
-

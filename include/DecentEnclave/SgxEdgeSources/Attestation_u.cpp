@@ -13,6 +13,7 @@
 #include <SimpleRlp/SimpleRlp.hpp>
 
 #include "../Common/Platform/Print.hpp"
+#include "../Common/Sgx/EpidRaMessages.hpp"
 #include "../Common/Sgx/IasRequester.hpp"
 #include "../Untrusted/Sgx/UntrustedBuffer.hpp"
 
@@ -219,6 +220,7 @@ extern "C" sgx_status_t ocall_decent_attest_ias_req_get_report(
 )
 {
 	using _IasRequester = DecentEnclave::Common::Sgx::IasRequester;
+	using _IasReportSet = DecentEnclave::Common::Sgx::IasReportSet;
 	using _UBuffer = DecentEnclave::Untrusted::Sgx::UntrustedBuffer<uint8_t>;
 
 	if (
@@ -235,7 +237,7 @@ extern "C" sgx_status_t ocall_decent_attest_ias_req_get_report(
 	const _IasRequester& iasRequester =
 		*static_cast<const _IasRequester*>(ias_requester_ptr);
 
-	auto iasReportSet = iasRequester.GetReport(req_body);
+	_IasReportSet iasReportSet = iasRequester.GetReport(req_body);
 
 	auto iasReportSetARlp = SimpleRlp::WriterGeneric::Write(iasReportSet);
 	_UBuffer uBuffer = _UBuffer::Allocate(iasReportSetARlp.size());

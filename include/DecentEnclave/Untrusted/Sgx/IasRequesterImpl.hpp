@@ -381,7 +381,7 @@ private:
 		char* resStr = curl_easy_unescape(
 			nullptr, // Since curl 7.82.0, this parameter is ignored
 			s.c_str(),
-			s.size(),
+			static_cast<int>(s.size()),
 			&outLen
 		);
 		if (resStr == nullptr)
