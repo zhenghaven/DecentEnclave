@@ -161,6 +161,18 @@ public:
 	}
 
 
+	const IasReportSet& GetIasReportSet() const
+	{
+		return m_iasReportSet;
+	}
+
+
+	const EpidQuoteVerifier& GetEpidQuoteVerifier() const
+	{
+		return *m_epidQuoteVrfy;
+	}
+
+
 //==========
 // EPID protocol messages
 //==========
@@ -203,7 +215,7 @@ public:
 		ImportEcKey(myEncSgxKey, m_myEncKey);
 
 		SetPeerEncrPubKey(msg1.g_a, randGen);
-		m_epidQuoteVrfy->SetStandardReportData(GenStdReportData(myEncSgxKey));
+		m_epidQuoteVrfy->SetStdReportData(GenStdReportData(myEncSgxKey));
 
 		res.resize(sizeof(sgx_ra_msg2_t));
 		sgx_ra_msg2_t& msg2Ref = *reinterpret_cast<sgx_ra_msg2_t*>(res.data());

@@ -76,7 +76,7 @@ public:
 	}
 
 
-	virtual void SetStandardReportData(const sgx_report_data_t& data)
+	virtual void SetStdReportData(const sgx_report_data_t& data)
 	{
 		m_stdReportData = data;
 	}
@@ -94,6 +94,13 @@ public:
 	{
 		m_authEnclaves = std::move(idList);
 	}
+
+
+	virtual const sgx_report_data_t& GetStdReportData() const
+	{
+		return m_stdReportData;
+	}
+
 
 protected:
 
