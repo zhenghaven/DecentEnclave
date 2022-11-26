@@ -35,7 +35,7 @@ public: // static members:
 
 
 	/**
-	 * @brief Get the Instance object.
+	 * @brief Get the singleton instance of Keyring
 	 *        There can only be one instance of Keyring
 	 *
 	 * @return Keyring&
@@ -64,7 +64,7 @@ public:
 		auto it = m_keyNameMap.find(keyName);
 		if (it == m_keyNameMap.end())
 		{
-			throw Exception("Keyring - Key name not found.");
+			throw Exception("Keyring - Key name not found");
 		}
 
 		return it->second.get();
@@ -76,7 +76,7 @@ public:
 		auto it = m_keyHashMap.find(keyHash);
 		if (it == m_keyHashMap.end())
 		{
-			throw Exception("Keyring - Key hash not found.");
+			throw Exception("Keyring - Key hash not found");
 		}
 
 		return it->second.get();
@@ -187,7 +187,7 @@ protected:
 
 		if (m_isLocked)
 		{
-			throw Exception("Keyring - Keyring is locked.");
+			throw Exception("Keyring - Keyring is locked");
 		}
 
 		auto keyHash = key.GetKeySha256();
@@ -196,13 +196,13 @@ protected:
 		auto nameMapIt = m_keyNameMap.find(keyName);
 		if (nameMapIt != m_keyNameMap.end())
 		{
-			throw Exception("Keyring - Key name already exists.");
+			throw Exception("Keyring - Key name already exists");
 		}
 
 		auto hashMapIt = m_keyHashMap.find(keyHashBytes);
 		if (hashMapIt != m_keyHashMap.end())
 		{
-			throw Exception("Keyring - Key hash already exists.");
+			throw Exception("Keyring - Key hash already exists");
 		}
 
 		m_keyNameMap.emplace(keyName, std::cref(key));
