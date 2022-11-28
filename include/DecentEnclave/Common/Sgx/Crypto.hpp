@@ -14,6 +14,7 @@
 #include <mbedTLScpp/Cmac.hpp>
 #include <mbedTLScpp/EcKey.hpp>
 #include <mbedTLScpp/Hash.hpp>
+#include <mbedTLScpp/SKey.hpp>
 
 #include "../Exceptions.hpp"
 
@@ -255,7 +256,7 @@ inline mbedTLScpp::SKey<_reqKeySizeInBits>
 }
 
 
-static sgx_report_data_t ReportDataFromHash(
+inline sgx_report_data_t ReportDataFromHash(
 	const mbedTLScpp::Hash<mbedTLScpp::HashType::SHA256>& inHash
 )
 {
