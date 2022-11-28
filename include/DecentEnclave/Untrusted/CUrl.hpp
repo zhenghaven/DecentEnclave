@@ -37,7 +37,13 @@ inline size_t CUrlHeaderCallbackWrapper(
 {
 	if (userdata == nullptr)
 	{
-		return 0;
+		// This callback is optional, so we do nothing here
+
+		// If returned amount differs from the amount passed in,
+		// it will signal an error to the library and cause the transfer
+		// to get aborted
+		// - https://curl.se/libcurl/c/CURLOPT_HEADERFUNCTION.html
+		return size * nitems;
 	}
 	CUrlHeaderCallBack& callbackFunc =
 		*static_cast<CUrlHeaderCallBack*>(userdata);
@@ -54,7 +60,13 @@ inline size_t CUrlContentCallbackWrapper(
 {
 	if (userdata == nullptr)
 	{
-		return 0;
+		// This callback is optional, so we do nothing here
+
+		// If returned amount differs from the amount passed in,
+		// it will signal an error to the library and cause the transfer
+		// to get aborted
+		// - https://curl.se/libcurl/c/CURLOPT_HEADERFUNCTION.html
+		return size * nmemb;
 	}
 	CUrlContentCallBack& callbackFunc =
 		*static_cast<CUrlContentCallBack*>(userdata);
@@ -67,8 +79,8 @@ inline uint16_t CUrlRequest(
 	const std::string& method,
 	const std::vector<std::string>& headerStrs,
 	const std::string& body,
-	CUrlHeaderCallBack& headerCallback,
-	CUrlContentCallBack& contentCallback
+	CUrlHeaderCallBack* headerCallback,
+	CUrlContentCallBack* contentCallback
 )
 {
 	// Initialize curl
@@ -108,13 +120,13 @@ inline uint16_t CUrlRequest(
 			hnd, CURLOPT_HEADERFUNCTION, &CUrlHeaderCallbackWrapper
 		)
 			!= CURLE_OK ||
-		curl_easy_setopt(hnd, CURLOPT_HEADERDATA, &headerCallback)
+		curl_easy_setopt(hnd, CURLOPT_HEADERDATA, headerCallback)
 			!= CURLE_OK ||
 		curl_easy_setopt(
 			hnd, CURLOPT_WRITEFUNCTION, &CUrlContentCallbackWrapper
 		)
 			!= CURLE_OK ||
-		curl_easy_setopt(hnd, CURLOPT_WRITEDATA, &contentCallback)
+		curl_easy_setopt(hnd, CURLOPT_WRITEDATA, contentCallback)
 			!= CURLE_OK ||
 		curl_easy_setopt(hnd, CURLOPT_HTTPHEADER, headers)
 			!= CURLE_OK
@@ -164,8 +176,8 @@ inline void CUrlRequestExpectRespCode(
 	const std::string& method,
 	const std::vector<std::string>& headerStrs,
 	const std::string& body,
-	CUrlHeaderCallBack& headerCallback,
-	CUrlContentCallBack& contentCallback,
+	CUrlHeaderCallBack* headerCallback,
+	CUrlContentCallBack* contentCallback,
 	uint16_t expectedRespCode
 )
 {

@@ -115,8 +115,8 @@ public:
 				hdrSubKey,
 			},
 			std::string(),
-			headerCallback,
-			contentCallback,
+			&headerCallback,
+			&contentCallback,
 			200
 		);
 
@@ -186,8 +186,8 @@ public:
 				hdrSubKey,
 			},
 			reqBody,
-			headerCallback,
-			contentCallback,
+			&headerCallback,
+			&contentCallback,
 			200
 		);
 
