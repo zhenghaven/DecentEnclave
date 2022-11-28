@@ -15,9 +15,9 @@
 
 #include <cppcodec/base64_rfc4648.hpp>
 #include <cppcodec/hex_lower.hpp>
-#include <curl/curl.h>
 #include <sgx_report.h>
 
+#include "../CUrl.hpp"
 #include "../../Common/Exceptions.hpp"
 #include "../../Common/Sgx/IasRequester.hpp"
 
@@ -35,6 +35,7 @@ class IasRequesterImpl :
 {
 public: // static members:
 
+
 	using Base = Common::Sgx::IasRequester;
 
 	using Base::GetIasUrlDev;
@@ -49,11 +50,6 @@ public: // static members:
 
 	using Base::ParseSpid;
 
-
-	using CUrlContentCallBack =
-		std::function<size_t(char*, size_t, size_t, void*)>;
-	using CUrlHeaderCallBack =
-		std::function<size_t(char*, size_t, size_t, void*)>;
 
 public:
 
@@ -85,7 +81,7 @@ public:
 				tmp = std::string(ptr, size * nitems);
 				if (tmp.find(GetHdrLabelReqId()) == 0)
 				{
-					requestId = ParseHeaderLine(tmp);
+					requestId = CUrlParseHeaderValue(tmp);
 				}
 
 				// If returned amount differs from the amount passed in,
@@ -111,7 +107,7 @@ public:
 
 		std::string hdrSubKey = GetHdrLabelSubKey() + ": " + m_subscriptionKey;
 
-		DoCURL(
+		Untrusted::CUrlRequestExpectRespCode(
 			reqFullUrl,
 			"GET",
 			{
@@ -120,7 +116,8 @@ public:
 			},
 			std::string(),
 			headerCallback,
-			contentCallback
+			contentCallback,
+			200
 		);
 
 		return outRevcList;
@@ -145,16 +142,16 @@ public:
 				tmp = std::string(ptr, size * nitems);
 				if (tmp.find(GetHdrLabelReqId()) == 0)
 				{
-					requestId = ParseHeaderLine(tmp);
+					requestId = CUrlParseHeaderValue(tmp);
 				}
 				else if (tmp.find(GetHdrLabelSign()) == 0)
 				{
-					iasSign = ParseHeaderLine(tmp);
+					iasSign = CUrlParseHeaderValue(tmp);
 				}
 				else if (tmp.find(GetHdrLabelCert()) == 0)
 				{
-					iasCert = ParseHeaderLine(tmp);
-					UrlUnescape(iasCert);
+					iasCert = CUrlParseHeaderValue(tmp);
+					CUrlUnescape(iasCert);
 				}
 
 				// If returned amount differs from the amount passed in,
@@ -180,7 +177,7 @@ public:
 
 		std::string hdrSubKey = GetHdrLabelSubKey() + ": " + m_subscriptionKey;
 
-		DoCURL(
+		Untrusted::CUrlRequestExpectRespCode(
 			reqFullUrl,
 			"POST",
 			{
@@ -190,7 +187,8 @@ public:
 			},
 			reqBody,
 			headerCallback,
-			contentCallback
+			contentCallback,
+			200
 		);
 
 		Common::Sgx::IasReportSet reportSet;
@@ -210,187 +208,11 @@ public:
 
 private:
 
-	static size_t HeaderCallback(
-		char *ptr,
-		size_t size,
-		size_t nitems,
-		void *userdata
-	)
-	{
-		if (userdata == nullptr)
-		{
-			return 0;
-		}
-		CUrlHeaderCallBack& callbackFunc =
-			*static_cast<CUrlHeaderCallBack*>(userdata);
-		return callbackFunc(ptr, size, nitems, nullptr);
-	}
-
-	static size_t ContentCallback(
-		char *ptr,
-		size_t size,
-		size_t nmemb,
-		void *userdata
-	)
-	{
-		if (userdata == nullptr)
-		{
-			return 0;
-		}
-		CUrlContentCallBack& callbackFunc =
-			*static_cast<CUrlContentCallBack*>(userdata);
-		return callbackFunc(ptr, size, nmemb, nullptr);
-	}
-
-	static void DoCURL(
-		const std::string& url,
-		const std::string& method,
-		const std::vector<std::string>& headerStrs,
-		const std::string& body,
-		CUrlHeaderCallBack& headerCallback,
-		CUrlContentCallBack& contentCallback
-	)
-	{
-		// Initialize curl
-		CURL *hnd = curl_easy_init();
-		if (hnd == nullptr)
-		{
-			throw Common::Exception("Failed to initialize curl");
-		}
-
-		// Initialize curl headers
-		curl_slist* headers = nullptr;
-		for (const auto& headerStr : headerStrs)
-		{
-			curl_slist* tmp = curl_slist_append(headers, headerStr.c_str());
-			if (tmp == nullptr)
-			{
-				curl_slist_free_all(headers);
-				curl_easy_cleanup(hnd);
-				throw Common::Exception("Failed to initialize curl headers");
-			}
-			headers = tmp;
-		}
-
-		// Set curl options
-		if (
-			// curl_easy_setopt(hnd, CURLOPT_VERBOSE, 1L)
-			//	!= CURLE_OK || // Turn this on for debugging
-			curl_easy_setopt(hnd, CURLOPT_CUSTOMREQUEST, method.c_str())
-				!= CURLE_OK ||
-			curl_easy_setopt(hnd, CURLOPT_URL, url.c_str())
-				!= CURLE_OK ||
-			curl_easy_setopt(hnd, CURLOPT_SSL_VERIFYPEER, 0L)
-				!= CURLE_OK ||
-			curl_easy_setopt(hnd, CURLOPT_FOLLOWLOCATION, 1L)
-				!= CURLE_OK ||
-			curl_easy_setopt(hnd, CURLOPT_HEADERFUNCTION, &HeaderCallback)
-				!= CURLE_OK ||
-			curl_easy_setopt(hnd, CURLOPT_HEADERDATA, &headerCallback)
-				!= CURLE_OK ||
-			curl_easy_setopt(hnd, CURLOPT_WRITEFUNCTION, &ContentCallback)
-				!= CURLE_OK ||
-			curl_easy_setopt(hnd, CURLOPT_WRITEDATA, &contentCallback)
-				!= CURLE_OK ||
-			curl_easy_setopt(hnd, CURLOPT_HTTPHEADER, headers)
-				!= CURLE_OK
-		)
-		{
-			curl_slist_free_all(headers);
-			curl_easy_cleanup(hnd);
-			throw Common::Exception("Failed to set curl options");
-		}
-
-		if (body.size() > 0)
-		{
-			if (
-				curl_easy_setopt(hnd, CURLOPT_POSTFIELDS, body.c_str())
-					!= CURLE_OK ||
-				curl_easy_setopt(hnd, CURLOPT_POSTFIELDSIZE, body.size())
-					!= CURLE_OK
-			)
-			{
-				curl_slist_free_all(headers);
-				curl_easy_cleanup(hnd);
-				throw Common::Exception("Failed to set curl request body");
-			}
-		}
-
-		long response_code = 0;
-		if (
-			curl_easy_perform(hnd) != CURLE_OK ||
-			curl_easy_getinfo(hnd, CURLINFO_RESPONSE_CODE, &response_code)
-				!= CURLE_OK
-		)
-		{
-			curl_slist_free_all(headers);
-			curl_easy_cleanup(hnd);
-			throw Common::Exception("Failed to perform curl request");
-		}
-
-		curl_slist_free_all(headers);
-		curl_easy_cleanup(hnd);
-		if (response_code != 200)
-		{
-			throw Common::Exception(
-				"Failed to get IAS SigRL (response code=" +
-				std::to_string(response_code) + ")"
-			);
-		}
-	}
-
 	static std::string EncodeGroupId(const sgx_epid_group_id_t& gid)
 	{
 		std::vector<uint8_t> gidLitEnd(std::begin(gid), std::end(gid));
 		std::vector<uint8_t> gidBigEnd(gidLitEnd.rbegin(), gidLitEnd.rend());
 		return cppcodec::hex_lower::encode(gidBigEnd);
-	}
-
-	// trim from start (in place)
-	static std::string& Ltrim(std::string &s)
-	{
-		s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](char ch)
-		{
-			return !std::isspace(ch);
-		}));
-
-		return s;
-	}
-
-	// trim from end (in place)
-	static std::string& Rtrim(std::string &s)
-	{
-		s.erase(std::find_if(s.rbegin(), s.rend(), [](char ch)
-		{
-			return !std::isspace(ch);
-		}).base(), s.end());
-
-		return s;
-	}
-
-	static std::string& ParseHeaderLine(std::string& s)
-	{
-		s = s.substr(s.find_first_of(':') + 1);
-		Rtrim(Ltrim(s));
-		return s;
-	}
-
-	static void UrlUnescape(std::string& s)
-	{
-		int outLen = 0;
-		char* resStr = curl_easy_unescape(
-			nullptr, // Since curl 7.82.0, this parameter is ignored
-			s.c_str(),
-			static_cast<int>(s.size()),
-			&outLen
-		);
-		if (resStr == nullptr)
-		{
-			throw Common::Exception("Failed to do URL unescape");
-		}
-		std::copy(resStr, resStr + outLen, s.begin());
-		curl_free(resStr);
-		s.resize(outLen);
 	}
 
 	std::string m_iasUrl;
