@@ -96,7 +96,7 @@ public:
 			[&outRevcList]
 			(char* ptr, size_t size, size_t nmemb, void*) -> size_t
 			{
-				outRevcList = std::string(ptr, size * nmemb);
+				outRevcList += std::string(ptr, size * nmemb);
 
 				// If returned amount differs from the amount passed in,
 				// it will signal an error to the library and cause the transfer
@@ -166,7 +166,7 @@ public:
 			[&respBody]
 			(char* ptr, size_t size, size_t nmemb, void*) -> size_t
 			{
-				respBody = std::string(ptr, size * nmemb);
+				respBody += std::string(ptr, size * nmemb);
 
 				// If returned amount differs from the amount passed in,
 				// it will signal an error to the library and cause the transfer

@@ -108,6 +108,8 @@ inline uint16_t CUrlRequest(
 	if (
 		// curl_easy_setopt(hnd, CURLOPT_VERBOSE, 1L)
 		//	!= CURLE_OK || // Turn this on for debugging
+		curl_easy_setopt(hnd, CURLOPT_TCP_NODELAY, 1)
+			!= CURLE_OK ||
 		curl_easy_setopt(hnd, CURLOPT_CUSTOMREQUEST, method.c_str())
 			!= CURLE_OK ||
 		curl_easy_setopt(hnd, CURLOPT_URL, url.c_str())
