@@ -188,10 +188,8 @@ public:
 	{
 		ShrinkCertChain(reportSet);
 
-		std::string certChainStr =
-			GetStrFromSimpleBytes(reportSet.get_IasCert());
 		mbedTLScpp::X509Cert certChain =
-			mbedTLScpp::X509Cert::FromPEM(certChainStr);
+			X509CertFromDERList(reportSet.get_IasCert());
 
 		VerifyCert(reportSet, certChain);
 
@@ -276,15 +274,13 @@ protected:
 
 	virtual void ShrinkCertChain(IasReportSet& reportSet) const
 	{
-		std::string certChainStr =
-			GetStrFromSimpleBytes(reportSet.get_IasCert());
-
 		mbedTLScpp::X509Cert certChain =
-			mbedTLScpp::X509Cert::FromPEM(certChainStr);
-		certChain.ShrinkChain(GetRootCaCert());
-		certChainStr = certChain.GetPemChain();
+			X509CertFromDERList(reportSet.get_IasCert());
 
-		reportSet.get_IasCert() = GetSimpleBytesFromStr(certChainStr);
+		certChain.ShrinkChain(GetRootCaCert());
+
+		reportSet.get_IasCert().clear();
+		X509Cert2DERList(reportSet.get_IasCert(), certChain);
 	}
 
 

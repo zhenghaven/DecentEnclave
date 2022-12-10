@@ -201,7 +201,7 @@ public:
 			std::move(reportSignBytes)
 		);
 
-		reportSet.get_IasCert() = Common::Sgx::GetSimpleBytesFromStr(iasCert);
+		Common::Sgx::CertPEM2DERList(reportSet.get_IasCert(), iasCert);
 
 		return reportSet;
 	}

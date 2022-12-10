@@ -320,11 +320,6 @@ public:
 		catch(const Exception&)
 		{}
 
-		Platform::Print::StrDebug(
-			"IAS Certificate: " +
-			GetStrFromSimpleBytes(m_iasReportSet.get_IasCert())
-		);
-
 		std::vector<uint8_t> msg4 = GenMsg4(vrfySucc);
 
 		if (vrfySucc)

@@ -10,8 +10,10 @@
 
 #include <tuple>
 
+#include <mbedTLScpp/X509Cert.hpp>
 #include <sgx_tcrypto.h>
 #include <SimpleRlp/SimpleRlp.hpp>
+
 
 #if defined(DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED) || \
 	defined(DECENT_ENCLAVE_PLATFORM_SGX_UNTRUSTED)
@@ -50,7 +52,9 @@ namespace Sgx
 using IasReportSetCore = std::tuple<
 	std::pair<
 		SimpleObjects::StrKey<SIMOBJ_KSTR("IasCert")>,
-		SimpleObjects::Bytes
+		SimpleObjects::ListT<
+			SimpleObjects::Bytes
+		>
 	>,
 	std::pair<
 		SimpleObjects::StrKey<SIMOBJ_KSTR("Report")>,
@@ -71,6 +75,10 @@ public: // static members:
 	using Self = IasReportSet;
 	using Base = SimpleObjects::StaticDict<IasReportSetCore>;
 
+	using IasCertType = SimpleObjects::ListT<
+		SimpleObjects::Bytes
+	>;
+
 public:
 
 	using Base::Base;
@@ -85,12 +93,12 @@ public:
 		return Base::get<SimpleObjects::StrKey<SIMOBJ_KSTR("ReportSign")> >();
 	}
 
-	SimpleObjects::Bytes& get_IasCert()
+	IasCertType& get_IasCert()
 	{
 		return Base::get<SimpleObjects::StrKey<SIMOBJ_KSTR("IasCert")> >();
 	}
 
-	const SimpleObjects::Bytes& get_IasCert() const
+	const IasCertType& get_IasCert() const
 	{
 		return Base::get<SimpleObjects::StrKey<SIMOBJ_KSTR("IasCert")> >();
 	}
@@ -111,7 +119,13 @@ public:
 using IasReportSetParserCore = std::tuple<
 	std::pair<
 		SimpleObjects::StrKey<SIMOBJ_KSTR("IasCert")>,
-		SimpleRlp::BytesParser
+		SimpleRlp::ListParserT<
+			SimpleRlp::BytesParser,
+			SimpleRlp::FailingParserBytes,
+			SimpleObjects::ListT<
+				SimpleObjects::Bytes
+			>
+		>
 	>,
 	std::pair<
 		SimpleObjects::StrKey<SIMOBJ_KSTR("Report")>,
@@ -147,6 +161,54 @@ inline SimpleObjects::Bytes GetSimpleBytesFromStr(const std::string& s)
 		reinterpret_cast<const uint8_t*>(s.data()),
 		reinterpret_cast<const uint8_t*>(s.data() + s.size())
 	);
+}
+
+
+inline void X509Cert2DERList(
+	Internal::Obj::ListT<Internal::Obj::Bytes>& derList,
+	mbedTLScpp::X509Cert& cert
+)
+{
+	bool hasNext = cert.HasNext();
+	do
+	{
+		derList.push_back(
+			SimpleObjects::Bytes(
+				cert.GetDer()
+			)
+		);
+
+		hasNext = cert.HasNext();
+
+		if (hasNext)
+		{
+			cert.NextCert();
+		}
+	} while (hasNext);
+}
+
+
+inline void CertPEM2DERList(
+	Internal::Obj::ListT<Internal::Obj::Bytes>& derList,
+	const std::string& pemStr
+)
+{
+	mbedTLScpp::X509Cert iasCertObj =
+		mbedTLScpp::X509Cert::FromPEM(pemStr);
+	X509Cert2DERList(derList, iasCertObj);
+}
+
+
+inline mbedTLScpp::X509Cert X509CertFromDERList(
+	Internal::Obj::ListT<Internal::Obj::Bytes>& derList
+)
+{
+	auto cert = mbedTLScpp::X509Cert::Empty();
+	for (const auto& der : derList)
+	{
+		cert.AppendDER(mbedTLScpp::CtnFullR(der.GetVal()));
+	}
+	return cert;
 }
 
 
