@@ -17,7 +17,8 @@
 #include <SimpleSysIO/SysCall/Files.hpp>
 
 #include "../../Common/Internal/SimpleIO.hpp"
-#include "../EnclaveExceptions.hpp"
+#include "../../Common/Sgx/DevModeDefs.hpp"
+#include "../../Common/Sgx/Exceptions.hpp"
 
 
 namespace DecentEnclave
@@ -59,18 +60,16 @@ public:
 		int updated = 0;
 		sgx_status_t ret = sgx_create_enclave(
 			enclaveImgPath.c_str(),
-			SGX_DEBUG_FLAG,
+			DECENTENCLAVE_SGX_DEBUG_FLAG,
 			&token,
 			&updated,
 			&m_encId,
 			nullptr
 		);
-
-		if (ret != SGX_SUCCESS)
-		{
-			// TODO: use sgx exception containing status code
-			throw EnclaveException("Failed to launch enclave");
-		}
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(
+			ret,
+			sgx_create_enclave
+		);
 
 		if (updated == 1)
 		{
