@@ -6,6 +6,7 @@
 
 #include <cstdio>
 #include <cstdint>
+#include <ctime>
 
 #include "../Common/Platform/Print.hpp"
 #include "../Common/Sgx/UntrustedBuffer.hpp"
@@ -39,4 +40,9 @@ extern "C" void ocall_decent_untrusted_buffer_delete(
 		);
 		break;
 	}
+}
+
+extern "C" uint64_t ocall_decent_untrusted_timestamp()
+{
+	return static_cast<uint64_t>(std::time(nullptr));
 }

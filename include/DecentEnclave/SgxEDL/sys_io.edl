@@ -16,5 +16,7 @@ enclave
 			[user_check] void* ptr
 		);
 
+		uint64_t ocall_decent_untrusted_timestamp();
+
 	}; // untrusted
 }; // enclave

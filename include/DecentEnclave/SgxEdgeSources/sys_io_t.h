@@ -19,6 +19,8 @@ sgx_status_t ocall_decent_untrusted_buffer_delete(
 	void* ptr
 );
 
+sgx_status_t ocall_decent_untrusted_timestamp(uint64_t* retval);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus
