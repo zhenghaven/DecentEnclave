@@ -246,13 +246,27 @@ private:
 
 #define DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(VAL, FUNC) \
 	{ \
-		sgx_status_t decentEnclaveChkRtErr = (VAL); \
-		if (SGX_SUCCESS != decentEnclaveChkRtErr) \
+		sgx_status_t mi_decentEnclaveChkRtErr = (VAL); \
+		if (SGX_SUCCESS != mi_decentEnclaveChkRtErr) \
 		{ \
-			throw DecentEnclave::Common::Sgx::SgxRuntimeError(decentEnclaveChkRtErr, #FUNC); \
+			throw DecentEnclave::Common::Sgx::SgxRuntimeError(mi_decentEnclaveChkRtErr, #FUNC); \
 		} \
 	}
 
+#define DECENTENCLAVE_SGX_CALL_CHECK_ERROR_E_R(FUNC, ...) \
+	{ \
+		sgx_status_t mi_decentEnclaveCallRtErr = SGX_ERROR_UNEXPECTED; \
+		sgx_status_t mi_decentEnclaveCallEgErr = \
+			(FUNC)(&mi_decentEnclaveCallRtErr, __VA_ARGS__); \
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(mi_decentEnclaveCallEgErr, FUNC); \
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(mi_decentEnclaveCallRtErr, FUNC); \
+	}
+
+#define DECENTENCLAVE_SGX_CALL_CHECK_ERROR_E(FUNC, ...) \
+	{ \
+		sgx_status_t mi_decentEnclaveCallEgErr = (FUNC)(__VA_ARGS__); \
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(mi_decentEnclaveCallEgErr, FUNC); \
+	}
 
 } // namespace Sgx
 } // namespace Common

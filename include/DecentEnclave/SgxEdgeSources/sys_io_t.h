@@ -21,6 +21,55 @@ sgx_status_t ocall_decent_untrusted_buffer_delete(
 
 sgx_status_t ocall_decent_untrusted_timestamp(uint64_t* retval);
 
+
+// ====================
+// Untrusted File
+// ====================
+
+sgx_status_t ocall_decent_untrusted_file_open(
+	sgx_status_t* retval,
+	void** ptr,
+	const char* path,
+	const char* mode
+);
+
+sgx_status_t ocall_decent_untrusted_file_close(void* ptr);
+
+sgx_status_t ocall_decent_untrusted_file_seek(
+	sgx_status_t* retval,
+	void* ptr,
+	ptrdiff_t offset,
+	uint8_t whence
+);
+
+sgx_status_t ocall_decent_untrusted_file_tell(
+	sgx_status_t* retval,
+	const void* ptr,
+	size_t* out_val
+);
+
+sgx_status_t ocall_decent_untrusted_file_flush(
+	sgx_status_t* retval,
+	void* ptr
+);
+
+sgx_status_t ocall_decent_untrusted_file_read(
+	sgx_status_t* retval,
+	void* ptr,
+	size_t size,
+	uint8_t** out_buf,
+	size_t* out_buf_size
+);
+
+sgx_status_t ocall_decent_untrusted_file_write(
+	sgx_status_t* retval,
+	void* ptr,
+	const uint8_t* in_buf,
+	size_t in_buf_size,
+	size_t* out_size
+);
+
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus
