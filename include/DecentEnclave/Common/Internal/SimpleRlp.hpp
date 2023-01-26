@@ -10,6 +10,10 @@ namespace SimpleRlp
 {
 } // namespace SimpleRlp
 
+namespace AdvancedRlp
+{
+} // namespace AdvancedRlp
+
 namespace DecentEnclave
 {
 namespace Common
@@ -18,6 +22,7 @@ namespace Internal
 {
 
 namespace Rlp = ::SimpleRlp;
+namespace AdvRlp = ::AdvancedRlp;
 
 } // namespace Internal
 } // namespace Common

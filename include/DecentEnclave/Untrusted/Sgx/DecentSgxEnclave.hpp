@@ -8,9 +8,18 @@
 
 #ifdef DECENT_ENCLAVE_PLATFORM_SGX_UNTRUSTED
 
+#include <vector>
 
 #include "../DecentEnclaveBase.hpp"
 #include "SgxEnclave.hpp"
+
+
+extern "C" sgx_status_t ecall_decent_common_init(
+	sgx_enclave_id_t eid,
+	sgx_status_t* retval,
+	const uint8_t* auth_list,
+	size_t auth_list_size
+);
 
 
 namespace DecentEnclave
@@ -32,7 +41,29 @@ public: // static members:
 
 public:
 
-	using SgxBase::SgxBase;
+	DecentSgxEnclave(
+		const std::vector<uint8_t>& authList,
+		const std::string& enclaveImgPath = DECENT_ENCLAVE_PLATFORM_SGX_IMAGE,
+		const std::string& launchTokenPath = DECENT_ENCLAVE_PLATFORM_SGX_TOKEN
+	) :
+		SgxBase(enclaveImgPath, launchTokenPath)
+	{
+		sgx_status_t funcRet = SGX_ERROR_UNEXPECTED;
+		sgx_status_t edgeRet = ecall_decent_common_init(
+			m_encId,
+			&funcRet,
+			authList.data(),
+			authList.size()
+		);
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(
+			edgeRet,
+			ecall_decent_common_init
+		);
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(
+			funcRet,
+			ecall_decent_common_init
+		);
+	}
 
 	// LCOV_EXCL_START
 	virtual ~DecentSgxEnclave() = default;

@@ -50,4 +50,16 @@ enclave
 
 	}; // untrusted
 
+
+	trusted
+	{
+
+		public sgx_status_t ecall_decent_common_init(
+			[in, size=auth_list_size] const uint8_t* auth_list,
+			size_t auth_list_size
+		);
+
+	}; // trusted
+
+
 }; // enclave
