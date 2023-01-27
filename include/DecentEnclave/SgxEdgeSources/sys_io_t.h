@@ -70,6 +70,38 @@ sgx_status_t ocall_decent_untrusted_file_write(
 );
 
 
+// ====================
+// Networking
+// ====================
+
+
+sgx_status_t ocall_decent_endpoint_connect(
+	sgx_status_t* retval,
+	void** ptr,
+	const char* name
+);
+
+sgx_status_t ocall_decent_ssocket_disconnect(
+	void* ptr
+);
+
+sgx_status_t ocall_decent_ssocket_send_raw(
+	sgx_status_t* retval,
+	void* ptr,
+	const uint8_t* in_buf,
+	size_t in_buf_size,
+	size_t* out_size
+);
+
+sgx_status_t ocall_decent_ssocket_recv_raw(
+	sgx_status_t* retval,
+	void* ptr,
+	size_t size,
+	uint8_t** out_buf,
+	size_t* out_buf_size
+);
+
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

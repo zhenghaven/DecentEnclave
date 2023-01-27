@@ -60,5 +60,28 @@ enclave
 			[out] size_t* out_size
 		);
 
+		sgx_status_t ocall_decent_endpoint_connect(
+			[out] void** ptr,
+			[in, string] const char* name
+		);
+
+		void ocall_decent_ssocket_disconnect(
+			[user_check] void* ptr
+		);
+
+		sgx_status_t ocall_decent_ssocket_send_raw(
+			[user_check] void* ptr,
+			[in, size=in_buf_size] const uint8_t* in_buf,
+			size_t in_buf_size,
+			[out] size_t* out_size
+		);
+
+		sgx_status_t ocall_decent_ssocket_recv_raw(
+			[user_check] void* ptr,
+			size_t size,
+			[out] uint8_t** out_buf,
+			[out] size_t* out_buf_size
+		);
+
 	}; // untrusted
 }; // enclave

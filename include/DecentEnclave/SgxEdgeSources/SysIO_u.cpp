@@ -12,8 +12,10 @@
 #include <SimpleObjects/Internal/make_unique.hpp>
 #include <SimpleSysIO/SysCall/Files.hpp>
 
+#include "../Common/Internal/SimpleSysIO.hpp"
 #include "../Common/Platform/Print.hpp"
 #include "../Common/Sgx/UntrustedBuffer.hpp"
+#include "../Untrusted/Config/EndpointsMgr.hpp"
 
 
 extern "C" void ocall_decent_enclave_print_str(const char* str)
@@ -204,6 +206,98 @@ extern "C" sgx_status_t ocall_decent_untrusted_file_write(
 	{
 		DecentEnclave::Common::Platform::Print::StrDebug(
 			"ocall_decent_untrusted_file_write failed with error " +
+			std::string(e.what())
+		);
+		return SGX_ERROR_UNEXPECTED;
+	}
+}
+
+
+// ====================
+// Networking
+// ====================
+
+
+extern "C" sgx_status_t ocall_decent_endpoint_connect(
+	void** ptr,
+	const char* name
+)
+{
+	using namespace DecentEnclave::Untrusted;
+	try
+	{
+		auto inst = Config::EndpointsMgr::GetInstance().GetStreamSocket(name);
+		*ptr = inst.release();
+		return SGX_SUCCESS;
+	}
+	catch(const std::exception& e)
+	{
+		DecentEnclave::Common::Platform::Print::StrDebug(
+			"ocall_decent_endpoint_connect failed with error " +
+			std::string(e.what())
+		);
+		return SGX_ERROR_UNEXPECTED;
+	}
+}
+
+extern "C" void ocall_decent_ssocket_disconnect(
+	void* ptr
+)
+{
+	using namespace DecentEnclave::Untrusted;
+	using _SSocketType = Config::EndpointsMgr::StreamSocketType;
+	std::unique_ptr<_SSocketType> realPtr(static_cast<_SSocketType*>(ptr));
+}
+
+extern "C" sgx_status_t ocall_decent_ssocket_send_raw(
+	void* ptr,
+	const uint8_t* in_buf,
+	size_t in_buf_size,
+	size_t* out_size
+)
+{
+	using namespace DecentEnclave::Untrusted;
+	using namespace DecentEnclave::Common::Internal::SysIO;
+	using _SSocketType = Config::EndpointsMgr::StreamSocketType;
+	_SSocketType* realPtr = static_cast<_SSocketType*>(ptr);
+
+	try
+	{
+		*out_size = StreamSocketRaw::Send(*realPtr, in_buf, in_buf_size);
+		return SGX_SUCCESS;
+	}
+	catch (const std::exception& e)
+	{
+		DecentEnclave::Common::Platform::Print::StrDebug(
+			"ocall_decent_ssocket_send_raw failed with error " +
+			std::string(e.what())
+		);
+		return SGX_ERROR_UNEXPECTED;
+	}
+}
+
+extern "C" sgx_status_t ocall_decent_ssocket_recv_raw(
+	void* ptr,
+	size_t size,
+	uint8_t** out_buf,
+	size_t* out_buf_size
+)
+{
+	using namespace DecentEnclave::Untrusted;
+	using namespace DecentEnclave::Common::Internal::SysIO;
+	using _SSocketType = Config::EndpointsMgr::StreamSocketType;
+	_SSocketType* realPtr = static_cast<_SSocketType*>(ptr);
+
+	try
+	{
+		*out_buf = new uint8_t[size];
+		*out_buf_size = StreamSocketRaw::Recv(*realPtr, *out_buf, size);
+		return SGX_SUCCESS;
+	}
+	catch (const std::exception& e)
+	{
+		DecentEnclave::Common::Platform::Print::StrDebug(
+			"ocall_decent_ssocket_recv_raw failed with error " +
 			std::string(e.what())
 		);
 		return SGX_ERROR_UNEXPECTED;
