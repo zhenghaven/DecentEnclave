@@ -33,7 +33,7 @@ public:
 	UntrustedFileImpl(const std::string& path, const std::string& mode):
 		m_ptr(nullptr)
 	{
-		DECENTENCLAVE_SGX_CALL_CHECK_ERROR_E_R(
+		DECENTENCLAVE_SGX_OCALL_CHECK_ERROR_E_R(
 			ocall_decent_untrusted_file_open,
 			&m_ptr,
 			path.c_str(),
@@ -54,7 +54,7 @@ public:
 			SimpleSysIO::SeekWhence::Begin
 	)
 	{
-		DECENTENCLAVE_SGX_CALL_CHECK_ERROR_E_R(
+		DECENTENCLAVE_SGX_OCALL_CHECK_ERROR_E_R(
 			ocall_decent_untrusted_file_seek,
 			m_ptr,
 			offset,
@@ -65,7 +65,7 @@ public:
 	size_t Tell() const
 	{
 		size_t ret = 0;
-		DECENTENCLAVE_SGX_CALL_CHECK_ERROR_E_R(
+		DECENTENCLAVE_SGX_OCALL_CHECK_ERROR_E_R(
 			ocall_decent_untrusted_file_tell,
 			m_ptr,
 			&ret
@@ -75,7 +75,7 @@ public:
 
 	void Flush()
 	{
-		DECENTENCLAVE_SGX_CALL_CHECK_ERROR_E_R(
+		DECENTENCLAVE_SGX_OCALL_CHECK_ERROR_E_R(
 			ocall_decent_untrusted_file_flush,
 			m_ptr
 		);
@@ -84,7 +84,7 @@ public:
 	size_t ReadBytesRaw(void* buffer, size_t size)
 	{
 		UntrustedBuffer<uint8_t> ub;
-		DECENTENCLAVE_SGX_CALL_CHECK_ERROR_E_R(
+		DECENTENCLAVE_SGX_OCALL_CHECK_ERROR_E_R(
 			ocall_decent_untrusted_file_read,
 			m_ptr,
 			size,
@@ -98,7 +98,7 @@ public:
 	size_t WriteBytesRaw(const void* buffer, size_t size)
 	{
 		size_t ret = 0;
-		DECENTENCLAVE_SGX_CALL_CHECK_ERROR_E_R(
+		DECENTENCLAVE_SGX_OCALL_CHECK_ERROR_E_R(
 			ocall_decent_untrusted_file_write,
 			m_ptr,
 			static_cast<const uint8_t*>(buffer),

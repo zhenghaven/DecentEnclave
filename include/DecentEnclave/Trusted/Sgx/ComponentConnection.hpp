@@ -67,7 +67,7 @@ public:
 	virtual size_t SendRaw(const void* data, size_t size) override
 	{
 		size_t retSize = 0;
-		DECENTENCLAVE_SGX_CALL_CHECK_ERROR_E_R(
+		DECENTENCLAVE_SGX_OCALL_CHECK_ERROR_E_R(
 			ocall_decent_ssocket_send_raw,
 			m_ptr,
 			static_cast<const uint8_t*>(data),
@@ -80,7 +80,7 @@ public:
 	virtual size_t RecvRaw(void* data, size_t size) override
 	{
 		UntrustedBuffer<uint8_t> ub;
-		DECENTENCLAVE_SGX_CALL_CHECK_ERROR_E_R(
+		DECENTENCLAVE_SGX_OCALL_CHECK_ERROR_E_R(
 			ocall_decent_ssocket_recv_raw,
 			m_ptr,
 			size,
@@ -98,7 +98,7 @@ public:
 	{
 		auto& handler = GetSSocketAsyncCallbackHandler();
 		auto regId = handler.RegisterCallback(std::move(callback));
-		DECENTENCLAVE_SGX_CALL_CHECK_ERROR_E_R(
+		DECENTENCLAVE_SGX_OCALL_CHECK_ERROR_E_R(
 			ocall_decent_ssocket_async_recv_raw,
 			m_ptr,
 			buffSize,
@@ -120,7 +120,7 @@ struct ComponentConnection
 	Connect(const std::string& componentName)
 	{
 		void* ptr = nullptr;
-		DECENTENCLAVE_SGX_CALL_CHECK_ERROR_E_R(
+		DECENTENCLAVE_SGX_OCALL_CHECK_ERROR_E_R(
 			ocall_decent_endpoint_connect,
 			&ptr,
 			componentName.c_str()
