@@ -14,8 +14,10 @@
 
 #include "../Common/Internal/SimpleSysIO.hpp"
 #include "../Common/Platform/Print.hpp"
+#include "../Common/Sgx/Exceptions.hpp"
 #include "../Common/Sgx/UntrustedBuffer.hpp"
 #include "../Untrusted/Config/EndpointsMgr.hpp"
+#include "sys_io_u.h"
 
 
 extern "C" void ocall_decent_enclave_print_str(const char* str)
@@ -298,6 +300,64 @@ extern "C" sgx_status_t ocall_decent_ssocket_recv_raw(
 	{
 		DecentEnclave::Common::Platform::Print::StrDebug(
 			"ocall_decent_ssocket_recv_raw failed with error " +
+			std::string(e.what())
+		);
+		return SGX_ERROR_UNEXPECTED;
+	}
+}
+
+
+static
+inline
+typename DecentEnclave::Common::Internal::
+	SysIO::StreamSocketBase::AsyncRecvCallback
+MakeAsyncRecvCallback(
+	sgx_enclave_id_t enclave_id,
+	uint64_t handler_reg_id
+)
+{
+	return [
+				enclave_id,
+				handler_reg_id
+			](std::vector<uint8_t> recvData, bool hasErrorOccurred) -> void
+		{
+			DECENTENCLAVE_SGX_ECALL_CHECK_ERROR_E_R(
+				ecall_decent_ssocket_async_recv_raw_callback,
+				enclave_id,
+				handler_reg_id,
+				recvData.data(),
+				recvData.size(),
+				hasErrorOccurred ? 1 : 0
+			);
+		};
+}
+
+
+extern "C" sgx_status_t ocall_decent_ssocket_async_recv_raw(
+	void* ptr,
+	size_t size,
+	sgx_enclave_id_t enclave_id,
+	uint64_t handler_reg_id
+)
+{
+	using namespace DecentEnclave::Untrusted;
+	using namespace DecentEnclave::Common::Internal::SysIO;
+	using _SSocketType = Config::EndpointsMgr::StreamSocketType;
+	_SSocketType* realPtr = static_cast<_SSocketType*>(ptr);
+
+	try
+	{
+		StreamSocketRaw::AsyncRecv(
+			*realPtr,
+			size,
+			MakeAsyncRecvCallback(enclave_id, handler_reg_id)
+		);
+		return SGX_SUCCESS;
+	}
+	catch (const std::exception& e)
+	{
+		DecentEnclave::Common::Platform::Print::StrDebug(
+			"ocall_decent_ssocket_async_recv_raw failed with error " +
 			std::string(e.what())
 		);
 		return SGX_ERROR_UNEXPECTED;

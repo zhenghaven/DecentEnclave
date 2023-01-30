@@ -18,6 +18,8 @@
 #include "../../Common/Internal/SimpleSysIO.hpp"
 #include "../../Common/Sgx/Exceptions.hpp"
 #include "../../SgxEdgeSources/sys_io_t.h"
+#include "../UntrustedAsyncEventHandler.hpp"
+#include "EnclaveIdentity.hpp"
 #include "UntrustedBuffer.hpp"
 
 
@@ -27,6 +29,20 @@ namespace Trusted
 {
 namespace Sgx
 {
+
+
+using SSocketAsyncCallbackType =
+	std::function<void(const std::vector<uint8_t>, bool)>;
+
+using SSocketAsyncCallbackHandler =
+	Trusted::UntrustedAsyncEventHandler<SSocketAsyncCallbackType>;
+
+
+SSocketAsyncCallbackHandler& GetSSocketAsyncCallbackHandler()
+{
+	static SSocketAsyncCallbackHandler s_handler;
+	return s_handler;
+}
 
 
 class StreamSocket : public Common::Internal::SysIO::StreamSocketBase
@@ -73,6 +89,22 @@ public:
 		);
 		std::memcpy(data, ub.m_data, ub.m_size);
 		return ub.m_size;
+	}
+
+	virtual void AsyncRecvRaw(
+		size_t buffSize,
+		AsyncRecvCallback callback
+	) override
+	{
+		auto& handler = GetSSocketAsyncCallbackHandler();
+		auto regId = handler.RegisterCallback(std::move(callback));
+		DECENTENCLAVE_SGX_CALL_CHECK_ERROR_E_R(
+			ocall_decent_ssocket_async_recv_raw,
+			m_ptr,
+			buffSize,
+			SelfEnclaveId::Get(),
+			regId
+		);
 	}
 
 private:

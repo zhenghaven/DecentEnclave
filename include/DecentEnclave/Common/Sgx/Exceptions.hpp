@@ -26,7 +26,7 @@ namespace Sgx
 {
 
 
-const char* GetErrorMessage(const sgx_status_t code)
+inline const char* GetErrorMessage(const sgx_status_t code)
 {
 	switch (code)
 	{
@@ -258,6 +258,15 @@ private:
 		sgx_status_t mi_decentEnclaveCallRtErr = SGX_ERROR_UNEXPECTED; \
 		sgx_status_t mi_decentEnclaveCallEgErr = \
 			(FUNC)(&mi_decentEnclaveCallRtErr, __VA_ARGS__); \
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(mi_decentEnclaveCallEgErr, FUNC); \
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(mi_decentEnclaveCallRtErr, FUNC); \
+	}
+
+#define DECENTENCLAVE_SGX_ECALL_CHECK_ERROR_E_R(FUNC, EID, ...) \
+	{ \
+		sgx_status_t mi_decentEnclaveCallRtErr = SGX_ERROR_UNEXPECTED; \
+		sgx_status_t mi_decentEnclaveCallEgErr = \
+			(FUNC)(EID, &mi_decentEnclaveCallRtErr, __VA_ARGS__); \
 		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(mi_decentEnclaveCallEgErr, FUNC); \
 		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(mi_decentEnclaveCallRtErr, FUNC); \
 	}

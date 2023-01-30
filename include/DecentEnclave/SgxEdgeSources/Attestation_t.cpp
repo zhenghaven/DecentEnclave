@@ -14,6 +14,28 @@
 #include "../Common/AuthList.hpp"
 #include "../Common/Platform/Print.hpp"
 #include "../Trusted/AuthList.hpp"
+#include "../Trusted/Sgx/EnclaveIdentity.hpp"
+
+
+extern "C" sgx_status_t ecall_enclave_common_init(
+	sgx_enclave_id_t enclave_id
+)
+{
+	using namespace DecentEnclave::Common;
+	using namespace DecentEnclave::Trusted::Sgx;
+
+	try
+	{
+		SelfEnclaveId::Init(enclave_id);
+
+		return SGX_SUCCESS;
+	}
+	catch(const std::exception& e)
+	{
+		Platform::Print::StrErr(e.what());
+		return SGX_ERROR_UNEXPECTED;
+	}
+}
 
 
 extern "C" sgx_status_t ecall_decent_common_init(

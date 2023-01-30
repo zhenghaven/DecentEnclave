@@ -21,6 +21,13 @@
 #include "../../Common/Sgx/Exceptions.hpp"
 
 
+extern "C" sgx_status_t ecall_enclave_common_init(
+	sgx_enclave_id_t eid,
+	sgx_status_t* retval,
+	sgx_enclave_id_t enclave_id
+);
+
+
 namespace DecentEnclave
 {
 namespace Untrusted
@@ -78,6 +85,12 @@ public:
 			auto file = _SysCall::WBinaryFile::Create(launchTokenPath);
 			file->WriteBytes(tokenBuf);
 		}
+
+		DECENTENCLAVE_SGX_ECALL_CHECK_ERROR_E_R(
+			ecall_enclave_common_init,
+			m_encId,
+			m_encId
+		);
 	}
 
 	SgxEnclave(const SgxEnclave& other) = delete;

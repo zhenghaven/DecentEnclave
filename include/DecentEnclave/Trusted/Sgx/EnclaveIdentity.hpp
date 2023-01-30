@@ -67,6 +67,25 @@ struct EnclaveIdentity
 }; // struct EnclaveIdentity
 
 
+struct SelfEnclaveId
+{
+
+	static sgx_enclave_id_t Init(sgx_enclave_id_t id)
+	{
+		static const sgx_enclave_id_t sk_enclaveId = id;
+
+		return sk_enclaveId;
+	}
+
+	static sgx_enclave_id_t Get()
+	{
+		return Init(0);
+	}
+
+}; // struct SelfEnclaveId
+
+
+
 } // namespace Sgx
 } // namespace Trusted
 } // namespace DecentEnclave

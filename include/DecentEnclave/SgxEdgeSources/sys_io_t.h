@@ -101,6 +101,14 @@ sgx_status_t ocall_decent_ssocket_recv_raw(
 	size_t* out_buf_size
 );
 
+sgx_status_t ocall_decent_ssocket_async_recv_raw(
+	sgx_status_t* retval,
+	void* ptr,
+	size_t size,
+	sgx_enclave_id_t enclave_id,
+	uint64_t handler_reg_id
+);
+
 
 #ifdef __cplusplus
 }
