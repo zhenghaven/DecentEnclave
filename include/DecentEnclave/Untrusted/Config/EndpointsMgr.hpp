@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include <boost/asio/io_service.hpp>
 #include <SimpleObjects/SimpleObjects.hpp>
 #include <SimpleSysIO/SysCall/TCPAcceptor.hpp>
 #include <SimpleSysIO/SysCall/TCPSocket.hpp>
@@ -50,9 +51,14 @@ public:
 class EndpointIP : public Endpoint
 {
 public:
-	EndpointIP(const std::string& ip, const uint16_t port) :
+	EndpointIP(
+		const std::string& ip,
+		const uint16_t port,
+		std::shared_ptr<boost::asio::io_service> ioService
+	) :
 		m_ip(ip),
-		m_port(port)
+		m_port(port),
+		m_ioService(std::move(ioService))
 	{}
 
 	virtual
@@ -60,7 +66,7 @@ public:
 	GetStreamAcceptor() const override
 	{
 		using namespace Common::Internal::SysIO;
-		return SysCall::TCPAcceptor::BindV4(m_ip, m_port);
+		return SysCall::TCPAcceptor::BindV4(m_ip, m_port, m_ioService);
 	}
 
 	virtual
@@ -68,13 +74,16 @@ public:
 	GetStreamSocket() const override
 	{
 		using namespace Common::Internal::SysIO;
-		return SysCall::TCPSocket::ConnectV4(m_ip, m_port);
+		return SysCall::TCPSocket::ConnectV4(m_ip, m_port, m_ioService);
 	}
 
 private:
 
 	std::string m_ip;
 	uint16_t m_port;
+
+	std::shared_ptr<boost::asio::io_service> m_ioService;
+
 }; // struct EndpointIP
 
 
@@ -94,11 +103,12 @@ public: // static members:
 
 
 	static std::shared_ptr<EndpointsMgr> GetInstancePtr(
-		const Common::Internal::Obj::Object* config = nullptr
+		const Common::Internal::Obj::Object* config = nullptr,
+		std::shared_ptr<boost::asio::io_service> ioService = nullptr
 	)
 	{
 		static std::shared_ptr<EndpointsMgr> s_instPtr =
-			std::make_shared<EndpointsMgr>(*config);
+			std::make_shared<EndpointsMgr>(*config, ioService);
 
 		return s_instPtr;
 	}
@@ -112,9 +122,13 @@ public: // static members:
 
 
 public:
-	EndpointsMgr(const Common::Internal::Obj::Object& config) :
+	EndpointsMgr(
+		const Common::Internal::Obj::Object& config,
+		std::shared_ptr<boost::asio::io_service> ioService
+	) :
 		m_inEndpoints(),
-		m_outEndpoints()
+		m_outEndpoints(),
+		m_ioService(std::move(ioService))
 	{
 		using namespace Common::Internal::Obj;
 
@@ -122,13 +136,13 @@ public:
 			config.AsDict()[String("AuthorizedComponents")].AsDict();
 		for (const auto& pair : cmpMap)
 		{
-			const auto& cmpName = std::get<0>(pair)->AsString();
+			const auto& cmpInfo = std::get<1>(pair)->AsDict();
+			const auto& cmpName = cmpInfo[String("Name")].AsString();
 
 			std::string cmpNameStr(cmpName.c_str(), cmpName.size());
 			auto& endpointListIn  = m_inEndpoints[cmpNameStr];
 			auto& endpointListOut = m_inEndpoints[cmpNameStr];
 
-			const auto& cmpInfo = std::get<1>(pair)->AsDict();
 			const auto& endpointMap = cmpInfo[String("Endpoints")].AsDict();
 			for (const auto& endpointPair : endpointMap)
 			{
@@ -145,7 +159,8 @@ public:
 						std::string(endpointName.c_str(), endpointName.size()),
 						Internal::make_unique<EndpointIP>(
 							std::string(ip.c_str(), ip.size()),
-							static_cast<uint16_t>(port)
+							static_cast<uint16_t>(port),
+							m_ioService
 						)
 					);
 				}
@@ -155,7 +170,8 @@ public:
 						std::string(endpointName.c_str(), endpointName.size()),
 						Internal::make_unique<EndpointIP>(
 							std::string(ip.c_str(), ip.size()),
-							static_cast<uint16_t>(port)
+							static_cast<uint16_t>(port),
+							m_ioService
 						)
 					);
 				}
@@ -210,6 +226,9 @@ private:
 
 	EndpointsMap m_inEndpoints;
 	EndpointsMap m_outEndpoints;
+
+	std::shared_ptr<boost::asio::io_service> m_ioService;
+
 }; // class EndpointsMgr
 
 

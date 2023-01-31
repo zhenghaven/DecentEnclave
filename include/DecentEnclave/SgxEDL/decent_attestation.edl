@@ -63,6 +63,10 @@ enclave
 			size_t auth_list_size
 		);
 
+		public sgx_status_t ecall_decent_lambda_handler(
+			[user_check] void* sock_ptr
+		);
+
 	}; // trusted
 
 

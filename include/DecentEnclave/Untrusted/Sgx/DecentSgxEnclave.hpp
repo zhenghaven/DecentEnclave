@@ -22,6 +22,13 @@ extern "C" sgx_status_t ecall_decent_common_init(
 );
 
 
+extern "C" sgx_status_t ecall_decent_lambda_handler(
+	sgx_enclave_id_t eid,
+	sgx_status_t* retval,
+	void* sock_ptr
+);
+
+
 namespace DecentEnclave
 {
 namespace Untrusted
@@ -33,7 +40,6 @@ namespace Sgx
 class DecentSgxEnclave :
 	public SgxEnclave,
 	virtual public DecentEnclaveBase
-
 {
 public: // static members:
 	using EncBase = DecentEnclaveBase;
@@ -80,6 +86,33 @@ public:
 #else // _MSC_VER
 	using SgxBase::GetPlatformName;
 #endif // _MSC_VER
+
+
+	virtual void HandleCall(
+		std::unique_ptr<EncBase::LmdFuncBase::SocketType> sock
+	) override
+	{
+		sgx_status_t funcRet = SGX_ERROR_UNEXPECTED;
+		sgx_status_t edgeRet = ecall_decent_lambda_handler(
+			m_encId,
+			&funcRet,
+			sock.get()
+		);
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(
+			edgeRet,
+			ecall_decent_lambda_handler
+		);
+
+		// call is successfully made to the enclave side
+		// now it's relative safe to release the ownership of the socket.
+		sock.release();
+
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(
+			funcRet,
+			ecall_decent_lambda_handler
+		);
+	}
+
 
 }; // class DecentSgxEnclave
 

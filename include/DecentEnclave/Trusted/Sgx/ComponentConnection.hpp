@@ -38,7 +38,7 @@ using SSocketAsyncCallbackHandler =
 	Trusted::UntrustedAsyncEventHandler<SSocketAsyncCallbackType>;
 
 
-SSocketAsyncCallbackHandler& GetSSocketAsyncCallbackHandler()
+inline SSocketAsyncCallbackHandler& GetSSocketAsyncCallbackHandler()
 {
 	static SSocketAsyncCallbackHandler s_handler;
 	return s_handler;
