@@ -141,7 +141,7 @@ public:
 
 			std::string cmpNameStr(cmpName.c_str(), cmpName.size());
 			auto& endpointListIn  = m_inEndpoints[cmpNameStr];
-			auto& endpointListOut = m_inEndpoints[cmpNameStr];
+			auto& endpointListOut = m_outEndpoints[cmpNameStr];
 
 			const auto& endpointMap = cmpInfo[String("Endpoints")].AsDict();
 			for (const auto& endpointPair : endpointMap)

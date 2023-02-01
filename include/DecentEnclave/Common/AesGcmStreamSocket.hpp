@@ -14,6 +14,7 @@
 #include <vector>
 
 #include <mbedTLScpp/Hkdf.hpp>
+#include <mbedTLScpp/RandInterfaces.hpp>
 #include <mbedTLScpp/SecretVector.hpp>
 #include <SimpleObjects/Internal/make_unique.hpp>
 #include <SimpleSysIO/StreamSocketBase.hpp>
@@ -45,14 +46,15 @@ public: //static members:
 	using CryptoPackager = AesGcmPackager<PlatformAesGcm>;
 
 	using KeyType = typename HandshakerType::RetKeyType;
+	using AddDataType = mbedTLScpp::SecretArray<uint64_t, 3>;
 
 	using SizedSendSizeType = uint64_t;
 
 	static constexpr size_t sk_keyBitSize = _keyBitSize;
 	static constexpr size_t sk_keyByteSize = sk_keyBitSize / 8;
+	static constexpr size_t sk_packBlockSize = 128;
 	static constexpr uint64_t sk_maxCounter =
 		std::numeric_limits<uint64_t>::max();
-	static constexpr size_t sk_packBlockSize = 128;
 
 	static const std::string& GetSecKeyDerLabel()
 	{
@@ -94,7 +96,8 @@ private: // static members:
 		{
 			size_t sizeExpecting = sizeof(SizedSendSizeType) - (handler->m_recvdSize);
 
-			handler->m_sock->AsyncRecvRaw(
+			Internal::SysIO::StreamSocketRaw::AsyncRecv(
+				*(handler->m_sock),
 				sizeExpecting,
 				[handler](std::vector<uint8_t> data, bool hasErrorOccurred)
 				{
@@ -111,7 +114,9 @@ private: // static members:
 		)
 		{
 			size_t sizeExpecting = (handler->m_packSize) - (handler->m_recvdSize);
-			handler->m_sock->AsyncRecvRaw(
+
+			Internal::SysIO::StreamSocketRaw::AsyncRecv(
+				*(handler->m_sock),
 				sizeExpecting,
 				[handler](std::vector<uint8_t> data, bool hasErrorOccurred)
 				{
@@ -212,9 +217,11 @@ public:
 
 	AesGcmStreamSocket(
 		std::unique_ptr<HandshakerType> handshaker,
-		std::unique_ptr<StreamSocketBase> sock
+		std::unique_ptr<StreamSocketBase> sock,
+		std::unique_ptr<mbedTLScpp::RbgInterface> rand
 	) :
 		m_handshaker(std::move(handshaker)),
+		m_rand(std::move(rand)),
 		m_selfSecKey(),
 		m_selfMakKey(),
 		m_selfAddData(),
@@ -252,6 +259,7 @@ public:
 	 */
 	AesGcmStreamSocket(AesGcmStreamSocket&& other) :
 		m_handshaker(std::move(other.m_handshaker)),
+		m_rand(std::move(other.m_rand)),
 		m_selfSecKey(std::move(other.m_selfSecKey)),
 		m_selfMakKey(std::move(other.m_selfMakKey)),
 		m_selfAddData(std::move(other.m_selfAddData)),
@@ -289,6 +297,7 @@ public:
 		if (this != &other)
 		{
 			m_handshaker = std::move(other.m_handshaker);
+			m_rand = std::move(other.m_rand);
 			m_selfSecKey = std::move(other.m_selfSecKey);
 			m_selfMakKey = std::move(other.m_selfMakKey);
 			m_selfAddData = std::move(other.m_selfAddData);
@@ -383,7 +392,7 @@ public:
 
 			auto handler = AsyncRecvHandler::Create(
 				m_socket.get(),
-				[this, callback](
+				[this, buffSize, callback](
 					std::vector<uint8_t> data,
 					bool hasErrorOccurred
 				)
@@ -391,13 +400,37 @@ public:
 					if (!hasErrorOccurred)
 					{
 						auto decMsg = DecryptMsg(data);
-						callback(
-							std::vector<uint8_t>(
-								decMsg.data(),
+						if (decMsg.size() > buffSize)
+						{
+							// we received more data than needed
+
+							// save the rest of the data to the recv buffer
+							m_recvBuf.assign(
+								decMsg.data() + buffSize,
 								decMsg.data() + decMsg.size()
-							),
-							false
-						);
+							);
+
+							// callback with the data needed
+							callback(
+								std::vector<uint8_t>(
+									decMsg.data(),
+									decMsg.data() + buffSize
+								),
+								false
+							);
+						}
+						else
+						{
+							// decMsg.size() < buffSize
+							// we received less data than needed
+							callback(
+								std::vector<uint8_t>(
+									decMsg.data(),
+									decMsg.data() + decMsg.size()
+								),
+								false
+							);
+						}
 					}
 				}
 			);
@@ -451,7 +484,8 @@ protected:
 			mbedTLScpp::CtnFullR(mbedTLScpp::gsk_emptyCtn),
 			mbedTLScpp::CtnFullR(mbedTLScpp::gsk_emptyCtn),
 			mbedTLScpp::CtnFullR(inMsg),
-			mbedTLScpp::CtnFullR(m_selfAddData)
+			mbedTLScpp::CtnFullR(m_selfAddData),
+			*m_rand
 		);
 
 		CheckSelfKeysLifetime();
@@ -485,6 +519,8 @@ protected:
 
 	virtual void RefreshSelfKeys()
 	{
+		static constexpr size_t _packBlockSize = sk_packBlockSize;
+
 		KeyType tmpSecKey = mbedTLScpp::Hkdf<
 			mbedTLScpp::HashType::SHA256,
 			sk_keyBitSize
@@ -508,7 +544,7 @@ protected:
 		m_selfAesGcm =
 			Common::Internal::Obj::Internal::make_unique<CryptoPackager>(
 				m_selfSecKey,
-				sk_packBlockSize
+				_packBlockSize
 			);
 
 		RefreshSelfAddData();
@@ -516,6 +552,8 @@ protected:
 
 	virtual void RefreshPeerKeys()
 	{
+		static constexpr size_t _packBlockSize = sk_packBlockSize;
+
 		KeyType tmpSecKey = mbedTLScpp::Hkdf<
 			mbedTLScpp::HashType::SHA256,
 			sk_keyBitSize
@@ -539,7 +577,7 @@ protected:
 		m_peerAesGcm =
 			Common::Internal::Obj::Internal::make_unique<CryptoPackager>(
 				m_peerSecKey,
-				sk_packBlockSize
+				_packBlockSize
 			);
 
 		RefreshPeerAddData();
@@ -554,25 +592,24 @@ private:
 	{
 		static_assert(
 			(
-				sizeof(
-					decltype(m_selfAddData)::value_type) *
-					decltype(m_selfAddData)::sk_itemCount
-				) ==
-				(
-					decltype(m_selfMakKey)::sk_itemCount +
-					sizeof(decltype(m_selfAddData)::value_type)
-				),
+				sizeof(AddDataType::value_type) *
+				AddDataType::sk_itemCount
+			) ==
+			(
+				KeyType::sk_itemCount +
+				sizeof(AddDataType::value_type)
+			),
 			"The size of additional data doesn't match the size actually needed."
 		);
 		static_assert(
-			decltype(m_selfAddData)::sk_itemCount == 3,
+			AddDataType::sk_itemCount == 3,
 			"The length of addtional data is too small."
 		);
 
 		std::memcpy(
 			m_selfAddData.data(),
 			m_selfMakKey.data(),
-			decltype(m_selfMakKey)::sk_itemCount
+			KeyType::sk_itemCount
 		);
 
 		m_selfAddData[2] = 0;
@@ -585,25 +622,24 @@ private:
 	{
 		static_assert(
 			(
-				sizeof(
-					decltype(m_peerAddData)::value_type) *
-					decltype(m_peerAddData)::sk_itemCount
-				) ==
-				(
-					decltype(m_peerMakKey)::sk_itemCount +
-					sizeof(decltype(m_peerAddData)::value_type)
-				),
+				sizeof(AddDataType::value_type) *
+				AddDataType::sk_itemCount
+			) ==
+			(
+				KeyType::sk_itemCount +
+				sizeof(AddDataType::value_type)
+			),
 			"The size of additional data doesn't match the size actually needed."
 		);
 		static_assert(
-			decltype(m_peerAddData)::sk_itemCount == 3,
+			AddDataType::sk_itemCount == 3,
 			"The length of addtional data is too small."
 		);
 
 		std::memcpy(
 			m_peerAddData.data(),
 			m_peerMakKey.data(),
-			decltype(m_peerMakKey)::sk_itemCount
+			KeyType::sk_itemCount
 		);
 
 		m_peerAddData[2] = 0;
@@ -613,14 +649,16 @@ private:
 
 	std::unique_ptr<HandshakerType> m_handshaker;
 
+	std::unique_ptr<mbedTLScpp::RbgInterface> m_rand;
+
 	KeyType m_selfSecKey; //Secret Key
 	KeyType m_selfMakKey; //Masking Key
-	mbedTLScpp::SecretArray<uint64_t, 3> m_selfAddData; //Additonal Data for MAC (m_selfMakKey || MsgCounter)
+	AddDataType m_selfAddData; //Additonal Data for MAC (m_selfMakKey || MsgCounter)
 	std::unique_ptr<CryptoPackager> m_selfAesGcm;
 
 	KeyType m_peerSecKey; //Secret Key
 	KeyType m_peerMakKey; //Masking Key
-	mbedTLScpp::SecretArray<uint64_t, 3> m_peerAddData; //Additonal Data for MAC (m_peerMakKey || MsgCounter)
+	AddDataType m_peerAddData; //Additonal Data for MAC (m_peerMakKey || MsgCounter)
 	std::unique_ptr<CryptoPackager> m_peerAesGcm;
 
 	std::unique_ptr<SocketType> m_socket;

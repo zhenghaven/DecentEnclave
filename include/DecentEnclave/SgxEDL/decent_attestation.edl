@@ -51,23 +51,4 @@ enclave
 	}; // untrusted
 
 
-	trusted
-	{
-
-		public sgx_status_t ecall_enclave_common_init(
-			sgx_enclave_id_t enclave_id
-		);
-
-		public sgx_status_t ecall_decent_common_init(
-			[in, size=auth_list_size] const uint8_t* auth_list,
-			size_t auth_list_size
-		);
-
-		public sgx_status_t ecall_decent_lambda_handler(
-			[user_check] void* sock_ptr
-		);
-
-	}; // trusted
-
-
 }; // enclave
