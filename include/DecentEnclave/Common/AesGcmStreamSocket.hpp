@@ -244,6 +244,9 @@ public:
 		m_peerSecKey = m_handshaker->GetSecretKey();
 		m_peerMakKey = m_handshaker->GetMaskKey();
 
+		RefreshSelfAesGcmer();
+		RefreshPeerAesGcmer();
+
 		RefreshSelfAddData();
 		RefreshPeerAddData();
 	}
@@ -448,7 +451,6 @@ protected:
 	 *
 	 * \return	Output message in binary (plain text).
 	 */
-	virtual
 	mbedTLScpp::SecretVector<uint8_t> DecryptMsg(
 		const std::vector<uint8_t>& inMsg
 	)
@@ -474,7 +476,6 @@ protected:
 	 *
 	 * \return	Output message in binary (cipher text).
 	 */
-	virtual
 	std::vector<uint8_t> EncryptMsg(
 		const std::vector<uint8_t>& inMsg
 	)
@@ -493,7 +494,7 @@ protected:
 		return res;
 	}
 
-	virtual void CheckSelfKeysLifetime()
+	void CheckSelfKeysLifetime()
 	{
 		if (m_selfAddData[2] >= sk_maxCounter)
 		{
@@ -505,7 +506,7 @@ protected:
 		}
 	}
 
-	virtual void CheckPeerKeysLifetime()
+	void CheckPeerKeysLifetime()
 	{
 		if (m_peerAddData[2] >= sk_maxCounter)
 		{
@@ -517,9 +518,19 @@ protected:
 		}
 	}
 
-	virtual void RefreshSelfKeys()
+	void RefreshSelfAesGcmer()
 	{
 		static constexpr size_t _packBlockSize = sk_packBlockSize;
+
+		m_selfAesGcm =
+			Common::Internal::Obj::Internal::make_unique<CryptoPackager>(
+				m_selfSecKey,
+				_packBlockSize
+			);
+	}
+
+	void RefreshSelfKeys()
+	{
 
 		KeyType tmpSecKey = mbedTLScpp::Hkdf<
 			mbedTLScpp::HashType::SHA256,
@@ -541,19 +552,24 @@ protected:
 		m_selfSecKey = tmpSecKey;
 		m_selfMakKey = tmpMakKey;
 
-		m_selfAesGcm =
-			Common::Internal::Obj::Internal::make_unique<CryptoPackager>(
-				m_selfSecKey,
-				_packBlockSize
-			);
+		RefreshSelfAesGcmer();
 
 		RefreshSelfAddData();
 	}
 
-	virtual void RefreshPeerKeys()
+	void RefreshPeerAesGcmer()
 	{
 		static constexpr size_t _packBlockSize = sk_packBlockSize;
 
+		m_peerAesGcm =
+			Common::Internal::Obj::Internal::make_unique<CryptoPackager>(
+				m_peerSecKey,
+				_packBlockSize
+			);
+	}
+
+	void RefreshPeerKeys()
+	{
 		KeyType tmpSecKey = mbedTLScpp::Hkdf<
 			mbedTLScpp::HashType::SHA256,
 			sk_keyBitSize
@@ -574,11 +590,7 @@ protected:
 		m_peerSecKey = tmpSecKey;
 		m_peerMakKey = tmpMakKey;
 
-		m_peerAesGcm =
-			Common::Internal::Obj::Internal::make_unique<CryptoPackager>(
-				m_peerSecKey,
-				_packBlockSize
-			);
+		RefreshPeerAesGcmer();
 
 		RefreshPeerAddData();
 	}

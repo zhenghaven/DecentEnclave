@@ -11,6 +11,7 @@
 #include <functional>
 
 #include <sgx_dh.h>
+#include <mbedTLScpp/SKey.hpp>
 
 #include "../../Common/AesGcmSocketHandshaker.hpp"
 #include "../../Common/Sgx/Crypto.hpp"
