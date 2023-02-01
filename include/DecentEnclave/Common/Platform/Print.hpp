@@ -6,9 +6,15 @@
 #pragma once
 
 
+#include <cstdint>
+
 #include <string>
 
+#include <cppcodec/hex_lower.hpp>
+#include <SimpleObjects/ToString.hpp>
+
 #include "../Exceptions.hpp"
+#include "../Internal/SimpleObj.hpp"
 
 #ifdef DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
 #include "../../SgxEdgeSources/sys_io_t.h"
@@ -43,29 +49,99 @@ struct Print
 
 	static void StrDebug(const std::string& str)
 	{
-#ifdef DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
-		Str("DEBUG(T): " + str + "\n");
-#else
-		Str("DEBUG(U): " + str + "\n");
-#endif // DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
+		Str(AsmLineLeader(GetDebugLabel(), GetPlatformSymbol()) + str + "\n");
 	}
 
 	static void StrInfo(const std::string& str)
 	{
-#ifdef DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
-		Str("INFO(T): " + str + "\n");
-#else
-		Str("INFO(U): " + str + "\n");
-#endif // DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
+		Str(AsmLineLeader(GetInfoLabel(), GetPlatformSymbol()) + str + "\n");
 	}
 
 	static void StrErr(const std::string& str)
 	{
+		Str(AsmLineLeader(GetErrLabel(), GetPlatformSymbol()) + str + "\n");
+	}
+
+	static void Hex(const void* data, const size_t size)
+	{
+		Str(cppcodec::hex_lower::encode(static_cast<const char*>(data), size));
+	}
+
+	static void HexDebug(const void* data, const size_t size)
+	{
+		StrDebug(
+			cppcodec::hex_lower::encode(static_cast<const char*>(data), size)
+		);
+	}
+
+	static void Ptr(const void* ptr)
+	{
+		Str(Ptr2Str(ptr));
+	}
+
+	static void HexDebug(const void* ptr)
+	{
+		StrDebug(Ptr2Str(ptr));
+	}
+
+	static void MemDebug(const void* data, const size_t size)
+	{
+		StrDebug(
+			"Memory dump @ " + Ptr2Str(data) +
+			", size: " + std::to_string(size) + ":"
+		);
+		HexDebug(data, size);
+		StrDebug("\n");
+	}
+
+
+	// Helper functions:
+
+	static std::string GetPlatformSymbol()
+	{
 #ifdef DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
-		Str("ERROR(T): " + str + "\n");
+		return "SGX-T";
 #else
-		Str("ERROR(U): " + str + "\n");
+		return "APP-U";
 #endif // DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
+	}
+
+	static std::string GetInfoLabel()
+	{
+		return "INFO";
+	}
+
+	static std::string GetDebugLabel()
+	{
+		return "DEBUG";
+	}
+
+	static std::string GetErrLabel()
+	{
+		return "ERROR";
+	}
+
+	static std::string AsmLineLeader(
+		const std::string& label,
+		const std::string& platSym
+	)
+	{
+		return label + "(" + platSym + ")" + ": ";
+	}
+
+	static std::string Ptr2Str(
+		const void* ptr
+	)
+	{
+		auto val = reinterpret_cast<std::uintptr_t>(ptr);
+
+		std::string res;
+		Common::Internal::Obj::Internal::PrimitiveToHEX<true, char>(
+			std::back_inserter(res),
+			val
+		);
+
+		return res;
 	}
 
 }; // struct Print
