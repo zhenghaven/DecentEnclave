@@ -87,17 +87,20 @@ public:
 
 	void ProcMsg3(const sgx_dh_msg3_t& msg3)
 	{
-		uint8_t* aekPtr = m_aek.data();
-		unsigned char (*aekArrPtr)[16] =
-			reinterpret_cast<unsigned char(*)[16]>(aekPtr);
-
+		sgx_key_128bit_t aek;
 		sgx_status_t sgxRet =
 			sgx_dh_initiator_proc_msg3(
 				&msg3,
 				&m_session,
-				aekArrPtr,
+				&aek,
 				&m_peerId
 			);
+		static_assert(
+			sizeof(aek) == RetKeyType::sk_itemCount,
+			"Key size mismatch."
+		);
+		std::memcpy(m_aek.data(), aek, sizeof(aek));
+		memset_s(aek, sizeof(aek), 0, sizeof(aek));
 		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(
 			sgxRet,
 			sgx_dh_initiator_proc_msg3
