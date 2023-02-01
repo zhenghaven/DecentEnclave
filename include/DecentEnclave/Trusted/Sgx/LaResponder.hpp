@@ -26,7 +26,7 @@ namespace Sgx
 
 
 class LaResponder :
-	public Common::AesGcmSocketHandshaker
+	public Common::AesGcmSocketHandshaker<128>
 {
 public: // static members:
 
@@ -115,7 +115,7 @@ public:
 	}
 
 
-	virtual mbedTLScpp::SKey<128> GetSecretKey128() const override
+	virtual mbedTLScpp::SKey<128> GetSecretKey() const override
 	{
 		static constexpr const char sk_label[] = "SK";
 
@@ -127,7 +127,7 @@ public:
 	}
 
 
-	virtual mbedTLScpp::SKey<128> GetMaskKey128() const override
+	virtual mbedTLScpp::SKey<128> GetMaskKey() const override
 	{
 		static constexpr const char sk_label[] = "MK";
 

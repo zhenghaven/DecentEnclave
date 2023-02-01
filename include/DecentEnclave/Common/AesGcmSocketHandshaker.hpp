@@ -20,8 +20,16 @@ namespace Common
 {
 
 
+template<size_t _keyBitSize>
 class AesGcmSocketHandshaker
 {
+public: // static members:
+
+	static constexpr size_t sk_keyBitSize = _keyBitSize;
+	static constexpr size_t sk_keyByteSize = sk_keyBitSize / 8;
+
+	using RetKeyType = mbedTLScpp::SKey<sk_keyBitSize>;
+
 public:
 
 	AesGcmSocketHandshaker() = default;
@@ -30,8 +38,8 @@ public:
 	// LCOV_EXCL_STOP
 
 
-	virtual mbedTLScpp::SKey<128> GetSecretKey128() const = 0;
-	virtual mbedTLScpp::SKey<128> GetMaskKey128() const = 0;
+	virtual RetKeyType GetSecretKey() const = 0;
+	virtual RetKeyType GetMaskKey() const = 0;
 
 
 	virtual bool IsHandshakeDone() const = 0;

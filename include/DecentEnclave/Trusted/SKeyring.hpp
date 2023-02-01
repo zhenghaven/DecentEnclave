@@ -16,6 +16,7 @@
 #include <mbedTLScpp/Hash.hpp>
 #include <mbedTLScpp/Hkdf.hpp>
 #include <mbedTLScpp/SecretVector.hpp>
+#include <mbedTLScpp/SKey.hpp>
 
 #include "../Common/Exceptions.hpp"
 
@@ -54,6 +55,9 @@ public: // static members:
 	using RootKeyType = typename RootKeyGenerator::KeyType;
 	using ChildKeyType = mbedTLScpp::SecretVector<uint8_t>;
 	using AuthIDsHashType = mbedTLScpp::Hash<mbedTLScpp::HashType::SHA256>;
+
+	template<size_t _keyBitSize>
+	using ChildSKeyType = mbedTLScpp::SKey<_keyBitSize>;
 
 
 	/**
@@ -146,6 +150,24 @@ public:
 		}
 
 		return iter->second;
+	}
+
+	template<size_t _keyBitSize>
+	ChildSKeyType<_keyBitSize> GetSKey(const std::string& keyName) const
+	{
+		static constexpr size_t keySize = _keyBitSize / 8;
+
+		const auto& key = GetKey(keyName);
+		if (key.size() < keySize)
+		{
+			throw Common::Exception("source key size is too small.");
+		}
+
+		ChildSKeyType<_keyBitSize> res;
+		// read first keySize bytes from key to res
+		std::copy(key.begin(), key.begin() + keySize, res.begin());
+
+		return res;
 	}
 
 	void Lock()

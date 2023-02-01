@@ -12,6 +12,7 @@
 
 #include <mbedTLScpp/Container.hpp>
 #include <mbedTLScpp/SecretVector.hpp>
+#include <mbedTLScpp/SKey.hpp>
 
 #ifdef DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
 #include <sgx_tcrypto.h>
@@ -28,19 +29,38 @@ namespace Common
 namespace Platform
 {
 
+template<size_t _keyBitSize>
+class AesGcmOneGoNative;
 
 #ifdef DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
 
-class AesGcm128OneGoNative
+template<>
+class AesGcmOneGoNative<128>
 {
+public: // static members:
+
+	static constexpr size_t sk_keyBitSize = 128;
+	static constexpr size_t sk_keyByteSize = sk_keyBitSize / 8;
+
+	using KeyType = mbedTLScpp::SKey<sk_keyBitSize>;
+
 public:
 
-	AesGcm128OneGoNative() = default;
+	AesGcmOneGoNative(KeyType key) :
+		m_key(std::move(key))
+	{}
 
-	~AesGcm128OneGoNative() = default;
+	AesGcmOneGoNative(const AesGcmOneGoNative& other) :
+		m_key(other.m_key)
+	{}
+
+	AesGcmOneGoNative(AesGcmOneGoNative&& other) :
+		m_key(std::move(other.m_key))
+	{}
+
+	~AesGcmOneGoNative() = default;
 
 	template<
-		typename _KeyCtnType,
 		typename _IvCtnType,   bool _IvCtnSecrecy,
 		typename _AadCtnType,  bool _AadCtnSecrecy,
 		typename _DataCtnType, bool _DataCtnSecrecy
@@ -50,7 +70,6 @@ public:
 		std::array<uint8_t, 16>
 	>
 	Encrypt(
-		const mbedTLScpp::ContCtnReadOnlyRef<_KeyCtnType,  true>& key,
 		const mbedTLScpp::ContCtnReadOnlyRef<_IvCtnType,   _IvCtnSecrecy>& iv,
 		const mbedTLScpp::ContCtnReadOnlyRef<_AadCtnType,  _AadCtnSecrecy>& aad,
 		const mbedTLScpp::ContCtnReadOnlyRef<_DataCtnType, _DataCtnSecrecy>& data
@@ -60,7 +79,7 @@ public:
 		std::array<uint8_t, 16> tag;
 
 		const sgx_aes_gcm_128bit_key_t* keyPtr =
-			reinterpret_cast<const sgx_aes_gcm_128bit_key_t*>(key.BeginBytePtr());
+			reinterpret_cast<const sgx_aes_gcm_128bit_key_t*>(m_key.data());
 		sgx_aes_gcm_128bit_tag_t* tagPtr =
 			reinterpret_cast<sgx_aes_gcm_128bit_tag_t*>(tag.data());
 
@@ -84,7 +103,6 @@ public:
 	}
 
 	template<
-		typename _KeyCtnType,
 		typename _IvCtnType,   bool _IvCtnSecrecy,
 		typename _AadCtnType,  bool _AadCtnSecrecy,
 		typename _DataCtnType, bool _DataCtnSecrecy,
@@ -92,7 +110,6 @@ public:
 	>
 	mbedTLScpp::SecretVector<uint8_t>
 	Decrypt(
-		const mbedTLScpp::ContCtnReadOnlyRef<_KeyCtnType,  true>& key,
 		const mbedTLScpp::ContCtnReadOnlyRef<_IvCtnType,   _IvCtnSecrecy>& iv,
 		const mbedTLScpp::ContCtnReadOnlyRef<_AadCtnType,  _AadCtnSecrecy>& aad,
 		const mbedTLScpp::ContCtnReadOnlyRef<_DataCtnType, _DataCtnSecrecy>& data,
@@ -102,7 +119,7 @@ public:
 		mbedTLScpp::SecretVector<uint8_t> res(data.GetRegionSize());
 
 		const sgx_aes_gcm_128bit_key_t* keyPtr =
-			reinterpret_cast<const sgx_aes_gcm_128bit_key_t*>(key.BeginBytePtr());
+			reinterpret_cast<const sgx_aes_gcm_128bit_key_t*>(m_key.data());
 		const sgx_aes_gcm_128bit_tag_t* tagPtr =
 			reinterpret_cast<const sgx_aes_gcm_128bit_tag_t*>(tag.BeginBytePtr());
 
@@ -125,20 +142,44 @@ public:
 		return res;
 	}
 
-}; // class AesGcm128OneGoNative
+private:
+
+	KeyType m_key;
+
+}; // class AesGcmOneGoNative<128>
 
 #else //#ifdef DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
 
-class AesGcm128OneGoNative
+template<size_t _keyBitSize>
+class AesGcmOneGoNative
 {
+public: // static members:
+
+	static constexpr size_t sk_keyBitSize = _keyBitSize;
+	static constexpr size_t sk_keyByteSize = sk_keyBitSize / 8;
+
+	using KeyType = mbedTLScpp::SKey<sk_keyBitSize>;
+
+	using GcmCryptorType =
+		mbedTLScpp::Gcm<mbedTLScpp::CipherType::AES, sk_keyBitSize>;
+
 public:
 
-	AesGcm128OneGoNative() = default;
+	AesGcmOneGoNative(KeyType key) :
+		m_cryptor(mbedTLScpp::CtnFullR(key))
+	{}
 
-	~AesGcm128OneGoNative() = default;
+	AesGcmOneGoNative(const AesGcmOneGoNative& other) :
+		m_cryptor(other.m_cryptor)
+	{}
+
+	AesGcmOneGoNative(AesGcmOneGoNative&& other) :
+		m_cryptor(std::move(other.m_cryptor))
+	{}
+
+	~AesGcmOneGoNative() = default;
 
 	template<
-		typename _KeyCtnType,
 		typename _IvCtnType,   bool _IvCtnSecrecy,
 		typename _AadCtnType,  bool _AadCtnSecrecy,
 		typename _DataCtnType, bool _DataCtnSecrecy
@@ -148,17 +189,12 @@ public:
 		std::array<uint8_t, 16>
 	>
 	Encrypt(
-		const mbedTLScpp::ContCtnReadOnlyRef<_KeyCtnType,  true>& key,
 		const mbedTLScpp::ContCtnReadOnlyRef<_IvCtnType,   _IvCtnSecrecy>& iv,
 		const mbedTLScpp::ContCtnReadOnlyRef<_AadCtnType,  _AadCtnSecrecy>& aad,
 		const mbedTLScpp::ContCtnReadOnlyRef<_DataCtnType, _DataCtnSecrecy>& data
 	)
 	{
-		mbedTLScpp::Gcm<mbedTLScpp::CipherType::AES, 128> gcm(
-			mbedTLScpp::CtnFullR(key)
-		);
-
-		return gcm.Encrypt(
+		return m_cryptor.Encrypt(
 			data,
 			iv,
 			aad
@@ -166,7 +202,6 @@ public:
 	}
 
 	template<
-		typename _KeyCtnType,
 		typename _IvCtnType,   bool _IvCtnSecrecy,
 		typename _AadCtnType,  bool _AadCtnSecrecy,
 		typename _DataCtnType, bool _DataCtnSecrecy,
@@ -174,18 +209,13 @@ public:
 	>
 	mbedTLScpp::SecretVector<uint8_t>
 	Decrypt(
-		const mbedTLScpp::ContCtnReadOnlyRef<_KeyCtnType,  true>& key,
 		const mbedTLScpp::ContCtnReadOnlyRef<_IvCtnType,   _IvCtnSecrecy>& iv,
 		const mbedTLScpp::ContCtnReadOnlyRef<_AadCtnType,  _AadCtnSecrecy>& aad,
 		const mbedTLScpp::ContCtnReadOnlyRef<_DataCtnType, _DataCtnSecrecy>& data,
 		const mbedTLScpp::ContCtnReadOnlyRef<_TagCtnType, _TagCtnSecrecy>& tag
 	)
 	{
-		mbedTLScpp::Gcm<mbedTLScpp::CipherType::AES, 128> gcm(
-			mbedTLScpp::CtnFullR(key)
-		);
-
-		return gcm.Decrypt(
+		return m_cryptor.Decrypt(
 			data,
 			iv,
 			aad,
@@ -193,7 +223,11 @@ public:
 		);
 	}
 
-}; // class AesGcm128OneGoNative
+private:
+
+	GcmCryptorType m_cryptor;
+
+}; // class AesGcmOneGoNative
 
 #endif // DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
 

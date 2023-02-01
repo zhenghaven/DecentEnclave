@@ -43,14 +43,18 @@ namespace Common
 // ----- Padding part
 // Padding bytes            (Encrypted)         - variable Size
 
-template<typename _AesGcmOneGoType = Platform::AesGcm128OneGoNative>
+template<typename _AesGcmOneGoType>
 class AesGcmPackager
 {
 public: // static members:
 
+	using CryptorType = _AesGcmOneGoType;
+	static constexpr size_t sk_keyBitSize = CryptorType::sk_keyBitSize;
+	static constexpr size_t sk_keyByteSize = CryptorType::sk_keyByteSize;
 	static constexpr size_t sk_ivSize = 12;
 	static constexpr size_t sk_tagSize = 16;
 
+	using KeyType = typename CryptorType::KeyType;
 	using IVType =  uint8_t[sk_ivSize];
 	using TagType = uint8_t[sk_tagSize];
 
@@ -155,9 +159,10 @@ public: // static members:
 
 public:
 	AesGcmPackager(
+		KeyType key,
 		size_t sealedBlockSize
 	) :
-		m_aesGcm(),
+		m_aesGcm(std::move(key)),
 		m_sealedBlockSize(sealedBlockSize)
 	{}
 
@@ -172,7 +177,6 @@ public:
 	AesGcmPackager(const AesGcmPackager& rhs) = delete;
 
 	template<
-		typename _SecCtnType,
 		typename _KeyMetaCtnType, bool _KeyMetaCtnSecrecy,
 		typename _MetaCtnType,    bool _MetaCtnSecrecy,
 		typename _DataCtnType,    bool _DataCtnSecrecy,
@@ -183,7 +187,6 @@ public:
 		std::array<uint8_t, 16>
 	>
 	Pack(
-		const mbedTLScpp::ContCtnReadOnlyRef<_SecCtnType, true>& key,
 		const mbedTLScpp::ContCtnReadOnlyRef<_KeyMetaCtnType, _KeyMetaCtnSecrecy>& keyMeta,
 		const mbedTLScpp::ContCtnReadOnlyRef<_MetaCtnType, _MetaCtnSecrecy>& meta,
 		const mbedTLScpp::ContCtnReadOnlyRef<_DataCtnType, _DataCtnSecrecy>& data,
@@ -298,7 +301,6 @@ public:
 
 				// Encrypt
 				std::tie(encrypted, tag) = m_aesGcm.Encrypt(
-					key,
 					CtnByteRgR<fpIvPos, fpIvPos + sizeof(IVType)>(finPackage),
 					CtnFullR(pkgAddData),
 					CtnFullR(inputPkg)
@@ -308,7 +310,6 @@ public:
 			{
 				// Encrypt
 				std::tie(encrypted, tag) = m_aesGcm.Encrypt(
-					key,
 					CtnByteRgR<fpIvPos, fpIvPos + sizeof(IVType)>(finPackage),
 					CtnByteRgR(finPackage, fpIvPos, fpEncDataPos),
 					CtnFullR(inputPkg)
@@ -335,7 +336,6 @@ public:
 
 
 	template<
-		typename _SecCtnType,
 		typename _DataCtnType, bool _DataCtnSecrecy,
 		typename _AddCtnType,  bool _AddCtnSecrecy
 	>
@@ -344,7 +344,6 @@ public:
 		mbedTLScpp::SecretVector<uint8_t> /* Meta */
 	>
 	Unpack(
-		const mbedTLScpp::ContCtnReadOnlyRef<_SecCtnType, true>& key,
 		const mbedTLScpp::ContCtnReadOnlyRef<_DataCtnType, _DataCtnSecrecy>& package,
 		const mbedTLScpp::ContCtnReadOnlyRef<_AddCtnType, _AddCtnSecrecy>& addData,
 		const std::array<uint8_t, 16>* inTag
@@ -400,7 +399,6 @@ public:
 				);
 
 				outputPkg = m_aesGcm.Decrypt(
-					key,
 					CtnByteRgR<fpIvPos, fpIvPos + sizeof(IVType)>(package),
 					CtnFullR(pkgAddData),
 					CtnByteRgR(package, fpEncDataPos),
@@ -410,7 +408,6 @@ public:
 			else
 			{
 				outputPkg = m_aesGcm.Decrypt(
-					key,
 					CtnByteRgR<fpIvPos, fpIvPos + sizeof(IVType)>(package),
 					CtnByteRgR(package, fpIvPos, fpEncDataPos),
 					CtnByteRgR(package, fpEncDataPos),
