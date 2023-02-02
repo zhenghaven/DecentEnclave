@@ -31,6 +31,9 @@ class LaResponder :
 {
 public: // static members:
 
+	using Base = Common::AesGcmSocketHandshaker<128>;
+	using RetKeyType = typename Base::RetKeyType;
+
 	enum class HSState : uint8_t
 	{
 		Initial,
@@ -72,6 +75,7 @@ public:
 	sgx_dh_msg1_t GenMsg1()
 	{
 		sgx_dh_msg1_t msg1;
+		std::memset(&msg1, 0, sizeof(msg1));
 		sgx_status_t sgxRet =
 			sgx_dh_responder_gen_msg1(&msg1, &m_session);
 		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(
@@ -87,12 +91,9 @@ public:
 
 	sgx_dh_msg3_t ProcMsg2(const sgx_dh_msg2_t& msg2)
 	{
-		uint8_t* aekPtr = m_aek.data();
-		unsigned char (*aekArrPtr)[16] =
-			reinterpret_cast<unsigned char(*)[16]>(aekPtr);
-
 		sgx_key_128bit_t aek;
 		sgx_dh_msg3_t msg3;
+		std::memset(&msg3, 0, sizeof(msg3));
 		sgx_status_t sgxRet =
 			sgx_dh_responder_proc_msg2(
 				&msg2,
@@ -123,7 +124,7 @@ public:
 	}
 
 
-	virtual mbedTLScpp::SKey<128> GetSecretKey() const override
+	virtual RetKeyType GetSecretKey() const override
 	{
 		static constexpr const char sk_label[] = "SK";
 
@@ -135,7 +136,7 @@ public:
 	}
 
 
-	virtual mbedTLScpp::SKey<128> GetMaskKey() const override
+	virtual RetKeyType GetMaskKey() const override
 	{
 		static constexpr const char sk_label[] = "MK";
 
@@ -188,7 +189,7 @@ private:
 
 	sgx_dh_session_t m_session;
 	HSState m_state;
-	mbedTLScpp::SKey<128> m_aek;
+	RetKeyType m_aek;
 	sgx_dh_session_enclave_identity_t m_peerId;
 	PeerIdVrfyCallback m_peerIdVrfyCallback;
 

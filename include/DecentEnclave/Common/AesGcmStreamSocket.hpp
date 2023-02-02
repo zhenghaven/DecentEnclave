@@ -38,6 +38,7 @@ class AesGcmStreamSocket:
 {
 public: //static members:
 
+	using Self = AesGcmStreamSocket<_keyBitSize>;
 	using Base = Internal::SysIO::StreamSocketBase;
 	using SocketType = Internal::SysIO::StreamSocketBase;
 
@@ -66,6 +67,26 @@ public: //static members:
 	{
 		static const std::string s_label = "next_maskin_key";
 		return s_label;
+	}
+
+
+	static std::unique_ptr<Self> FromHandshake(
+		std::unique_ptr<HandshakerType> handshaker,
+		std::unique_ptr<StreamSocketBase> sock,
+		std::unique_ptr<mbedTLScpp::RbgInterface> rand
+	)
+	{
+		handshaker->Handshake(*sock);
+
+		KeyType secretKey = handshaker->GetSecretKey();
+		KeyType maskKey = handshaker->GetMaskKey();
+
+		return Internal::Obj::Internal::make_unique<Self>(
+			std::move(secretKey),
+			std::move(maskKey),
+			std::move(sock),
+			std::move(rand)
+		);
 	}
 
 
@@ -214,36 +235,24 @@ public:
 
 	AesGcmStreamSocket() = delete;
 
-
 	AesGcmStreamSocket(
-		std::unique_ptr<HandshakerType> handshaker,
+		KeyType secretKey,
+		KeyType maskKey,
 		std::unique_ptr<StreamSocketBase> sock,
 		std::unique_ptr<mbedTLScpp::RbgInterface> rand
 	) :
-		m_handshaker(std::move(handshaker)),
 		m_rand(std::move(rand)),
-		m_selfSecKey(),
-		m_selfMakKey(),
+		m_selfSecKey(secretKey),
+		m_selfMakKey(maskKey),
 		m_selfAddData(),
 		m_selfAesGcm(),
-		m_peerSecKey(),
-		m_peerMakKey(),
+		m_peerSecKey(secretKey),
+		m_peerMakKey(maskKey),
 		m_peerAddData(),
 		m_peerAesGcm(),
 		m_socket(std::move(sock)),
 		m_recvBuf()
 	{
-		// perform handshake
-		m_handshaker->Handshake(*m_socket);
-
-		// set self keys
-		m_selfSecKey = m_handshaker->GetSecretKey();
-		m_selfMakKey = m_handshaker->GetMaskKey();
-
-		// set peer keys
-		m_peerSecKey = m_handshaker->GetSecretKey();
-		m_peerMakKey = m_handshaker->GetMaskKey();
-
 		RefreshSelfAesGcmer();
 		RefreshPeerAesGcmer();
 
@@ -261,7 +270,6 @@ public:
 	 * \param [in,out]	other	The other.
 	 */
 	AesGcmStreamSocket(AesGcmStreamSocket&& other) :
-		m_handshaker(std::move(other.m_handshaker)),
 		m_rand(std::move(other.m_rand)),
 		m_selfSecKey(std::move(other.m_selfSecKey)),
 		m_selfMakKey(std::move(other.m_selfMakKey)),
@@ -299,7 +307,6 @@ public:
 	{
 		if (this != &other)
 		{
-			m_handshaker = std::move(other.m_handshaker);
 			m_rand = std::move(other.m_rand);
 			m_selfSecKey = std::move(other.m_selfSecKey);
 			m_selfMakKey = std::move(other.m_selfMakKey);
@@ -658,8 +665,6 @@ private:
 	}
 
 private:
-
-	std::unique_ptr<HandshakerType> m_handshaker;
 
 	std::unique_ptr<mbedTLScpp::RbgInterface> m_rand;
 

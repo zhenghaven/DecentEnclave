@@ -10,7 +10,6 @@
 
 #include <string>
 
-#include <cppcodec/hex_lower.hpp>
 #include <SimpleObjects/ToString.hpp>
 
 #include "../Exceptions.hpp"
@@ -64,14 +63,24 @@ struct Print
 
 	static void Hex(const void* data, const size_t size)
 	{
-		Str(cppcodec::hex_lower::encode(static_cast<const char*>(data), size));
+		std::string res;
+		Common::Internal::Obj::Internal::BytesToHEX<false, char>(
+			std::back_inserter(res),
+			static_cast<const uint8_t*>(data),
+			static_cast<const uint8_t*>(data) + size
+		);
+		Str(res);
 	}
 
 	static void HexDebug(const void* data, const size_t size)
 	{
-		StrDebug(
-			cppcodec::hex_lower::encode(static_cast<const char*>(data), size)
+		std::string res;
+		Common::Internal::Obj::Internal::BytesToHEX<false, char>(
+			std::back_inserter(res),
+			static_cast<const uint8_t*>(data),
+			static_cast<const uint8_t*>(data) + size
 		);
+		StrDebug(res);
 	}
 
 	static void Ptr(const void* ptr)

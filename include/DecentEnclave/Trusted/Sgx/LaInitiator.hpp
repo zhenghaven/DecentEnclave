@@ -31,6 +31,9 @@ class LaInitiator :
 {
 public: // static members:
 
+	using Base = Common::AesGcmSocketHandshaker<128>;
+	using RetKeyType = typename Base::RetKeyType;
+
 	enum class HSState : uint8_t
 	{
 		Initial,
@@ -72,6 +75,7 @@ public:
 	sgx_dh_msg2_t ProcMsg1(const sgx_dh_msg1_t& msg1)
 	{
 		sgx_dh_msg2_t msg2;
+		std::memset(&msg2, 0, sizeof(msg2));
 		sgx_status_t sgxRet =
 			sgx_dh_initiator_proc_msg1(&msg1, &msg2, &m_session);
 		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(
@@ -115,7 +119,7 @@ public:
 	}
 
 
-	virtual mbedTLScpp::SKey<128> GetSecretKey() const override
+	virtual RetKeyType GetSecretKey() const override
 	{
 		static constexpr const char sk_label[] = "SK";
 
@@ -127,7 +131,7 @@ public:
 	}
 
 
-	virtual mbedTLScpp::SKey<128> GetMaskKey() const override
+	virtual RetKeyType GetMaskKey() const override
 	{
 		static constexpr const char sk_label[] = "MK";
 
@@ -180,7 +184,7 @@ private:
 
 	sgx_dh_session_t m_session;
 	HSState m_state;
-	mbedTLScpp::SKey<128> m_aek;
+	RetKeyType m_aek;
 	sgx_dh_session_enclave_identity_t m_peerId;
 	PeerIdVrfyCallback m_peerIdVrfyCallback;
 

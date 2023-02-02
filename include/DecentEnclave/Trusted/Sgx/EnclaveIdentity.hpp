@@ -9,9 +9,11 @@
 #ifdef DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
 
 
-#include <cppcodec/hex_lower.hpp>
 #include <sgx_utils.h>
 
+#include <SimpleObjects/ToString.hpp>
+
+#include "../../Common/Internal/SimpleObj.hpp"
 #include "../../Common/Sgx/Exceptions.hpp"
 
 
@@ -55,10 +57,22 @@ struct EnclaveIdentity
 	}
 
 
+	static std::string BuildSelfHashHex()
+	{
+		std::string HEXStr;
+		Common::Internal::Obj::Internal::BytesToHEX<false, char>(
+			std::back_inserter(HEXStr),
+			GetSelfHash().begin(),
+			GetSelfHash().end()
+		);
+		return HEXStr;
+	}
+
+
 	static const std::string& GetSelfHashHex()
 	{
-		static const std::string sk_selfHashHex =
-			cppcodec::hex_lower::encode(GetSelfHash());
+
+		static const std::string sk_selfHashHex = BuildSelfHashHex();
 
 		return sk_selfHashHex;
 	}
