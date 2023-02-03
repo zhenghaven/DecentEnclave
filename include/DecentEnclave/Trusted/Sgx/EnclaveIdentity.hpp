@@ -9,6 +9,9 @@
 #ifdef DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
 
 
+#include <string>
+#include <vector>
+
 #include <sgx_utils.h>
 
 #include <SimpleObjects/ToString.hpp>
