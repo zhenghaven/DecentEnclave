@@ -9,16 +9,21 @@
 #include <cstdint>
 
 #include <string>
+#ifdef DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
+// no C++ headers needed for SGX
+#else
+#include <iostream>
+#endif // DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
 
 #include <SimpleObjects/ToString.hpp>
 
 #include "../Exceptions.hpp"
 #include "../Internal/SimpleObj.hpp"
-
 #ifdef DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
 #include "../../SgxEdgeSources/sys_io_t.h"
+#include "../Sgx/Exceptions.hpp"
 #else
-#include <cstdio>
+// no DecentEncalve headers needed for Untrusted
 #endif // DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
 
 
@@ -35,14 +40,12 @@ struct Print
 	static void Str(const std::string& str)
 	{
 #ifdef DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
-		auto res = ocall_decent_enclave_print_str(str.c_str());
-		if (res != SGX_SUCCESS)
-		{
-			// TODO: use SGX specific exception
-			throw Exception("Failed to print string in SGX enclave.");
-		}
+		DECENTENCLAVE_SGX_OCALL_CHECK_ERROR_E(
+			ocall_decent_enclave_print_str,
+			str.c_str()
+		);
 #else
-		std::printf("%s", str.c_str());
+		std::cout << str << std::flush;
 #endif // DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
 	}
 

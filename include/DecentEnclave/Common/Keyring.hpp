@@ -15,8 +15,10 @@
 #include <type_traits>
 #include <unordered_map>
 
-#include <SimpleObjects/SimpleObjects.hpp>
+#include <SimpleObjects/DefaultTypes.hpp>
+#include <SimpleObjects/ToString.hpp>
 
+#include "../Common/Internal/SimpleObj.hpp"
 #include "Exceptions.hpp"
 #include "KeyringKey.hpp"
 
@@ -32,7 +34,7 @@ class Keyring
 public: // static members:
 
 	using KeyReference = std::reference_wrapper<const KeyringKey>;
-
+	using MappedKeyHashType = Common::Internal::Obj::Bytes;
 
 	/**
 	 * @brief Get the singleton instance of Keyring
@@ -71,7 +73,7 @@ public:
 	}
 
 
-	const KeyringKey& operator[](const SimpleObjects::Bytes& keyHash) const
+	const KeyringKey& operator[](const MappedKeyHashType& keyHash) const
 	{
 		auto it = m_keyHashMap.find(keyHash);
 		if (it == m_keyHashMap.end())
@@ -119,12 +121,18 @@ public:
 
 	std::string GenHashHex() const
 	{
-		std::string hex = cppcodec::hex_lower::encode(GenHash());
-		return hex;
+		auto hash = GenHash();
+		std::string HEXStr;
+		Common::Internal::Obj::Internal::BytesToHEX<false, char>(
+			std::back_inserter(HEXStr),
+			hash.begin(),
+			hash.end()
+		);
+		return HEXStr;
 	}
 
 
-	bool IsRegistered(const SimpleObjects::Bytes& keyHash) const
+	bool IsRegistered(const MappedKeyHashType& keyHash) const
 	{
 		return m_keyHashMap.find(keyHash) != m_keyHashMap.end();
 	}
@@ -133,7 +141,7 @@ public:
 	bool IsRegistered(const std::array<uint8_t, 32UL>& keyHash) const
 	{
 		return IsRegistered(
-			SimpleObjects::Bytes(keyHash.cbegin(), keyHash.cend())
+			MappedKeyHashType(keyHash.cbegin(), keyHash.cend())
 		);
 	}
 
@@ -191,7 +199,7 @@ protected:
 		}
 
 		auto keyHash = key.GetKeySha256();
-		SimpleObjects::Bytes keyHashBytes(keyHash.cbegin(), keyHash.cend());
+		MappedKeyHashType keyHashBytes(keyHash.cbegin(), keyHash.cend());
 
 		auto nameMapIt = m_keyNameMap.find(keyName);
 		if (nameMapIt != m_keyNameMap.end())
@@ -215,7 +223,7 @@ private:
 	mutable std::atomic_bool m_isLocked;
 	mutable std::mutex m_mapMutex;
 	std::unordered_map<std::string, KeyReference> m_keyNameMap;
-	std::map<SimpleObjects::Bytes, KeyReference> m_keyHashMap;
+	std::map<MappedKeyHashType, KeyReference> m_keyHashMap;
 
 }; // class Keyring
 

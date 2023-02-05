@@ -11,9 +11,11 @@
 #include <array>
 #include <vector>
 
-#include <cppcodec/hex_lower.hpp>
 #include <mbedTLScpp/Hash.hpp>
 #include <mbedTLScpp/PKey.hpp>
+#include <SimpleObjects/ToString.hpp>
+
+#include "../Common/Internal/SimpleObj.hpp"
 
 
 namespace DecentEnclave
@@ -76,8 +78,14 @@ public:
 
 	std::string GetKeySha256Hex() const
 	{
-		std::string hex = cppcodec::hex_lower::encode(GetKeySha256());
-		return hex;
+		auto hash = GetKeySha256();
+		std::string HEXStr;
+		Common::Internal::Obj::Internal::BytesToHEX<false, char>(
+			std::back_inserter(HEXStr),
+			hash.begin(),
+			hash.end()
+		);
+		return HEXStr;
 	}
 
 

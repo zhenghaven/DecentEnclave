@@ -22,7 +22,7 @@
 
 extern "C" void ocall_decent_enclave_print_str(const char* str)
 {
-	std::printf("%s", str);
+	DecentEnclave::Common::Platform::Print::Str(str);
 }
 
 extern "C" void ocall_decent_untrusted_buffer_delete(

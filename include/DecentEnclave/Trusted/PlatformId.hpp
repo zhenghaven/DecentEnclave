@@ -9,6 +9,9 @@
 #include <string>
 
 #include <cppcodec/hex_lower.hpp>
+#include <SimpleObjects/ToString.hpp>
+
+#include "../Common/Internal/SimpleObj.hpp"
 
 
 #ifdef DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
@@ -38,9 +41,12 @@ struct PlatformId : public PlatformIdImpl
 static std::string GetIdHex()
 {
 	static const auto& id = GetId();
-	static std::string idHex =
-		cppcodec::hex_lower::encode(id.data(), id.size());
-
+	static std::string idHex;
+	Common::Internal::Obj::Internal::BytesToHEX<false, char>(
+		std::back_inserter(idHex),
+		id.cbegin(),
+		id.cend()
+	);
 	return idHex;
 }
 

@@ -17,7 +17,6 @@
 
 #include "../../Common/Sgx/DevModeDefs.hpp"
 #ifdef DECENTENCLAVE_SGX_DEBUG_FLAG
-#include <cppcodec/hex_lower.hpp>
 #include "../../Common/Platform/Print.hpp"
 #endif // DECENTENCLAVE_SGX_DEBUG_FLAG
 
@@ -26,7 +25,9 @@
 
 #include <mbedTLScpp/SKey.hpp>
 #include <mbedTLScpp/Hash.hpp>
+#include <SimpleObjects/ToString.hpp>
 
+#include "../../Common/Internal/SimpleObj.hpp"
 #include "../../Common/Sgx/Exceptions.hpp"
 #include "EnclaveIdentity.hpp"
 
@@ -253,8 +254,12 @@ private:
 		);
 
 #ifdef DECENTENCLAVE_SGX_DEBUG_FLAG
-		std::string keyHex =
-			cppcodec::hex_lower::encode(key.data(), key.size());
+		std::string keyHex;
+		Common::Internal::Obj::Internal::BytesToHEX<false, char>(
+			std::back_inserter(keyHex),
+			key.data(),
+			key.data() + key.size()
+		);
 		Common::Platform::Print::StrDebug(
 			"Key generated for PlatformId  : " + keyHex
 		);
