@@ -150,8 +150,6 @@ inline mbedTLScpp::X509Cert IssueAppCert(
 
 	mbedTLScpp::BigNum serialNum = mbedTLScpp::BigNum::Rand(32, rand);
 
-	auto der = certWriter.GetDer(rand);
-
 	certWriter.SetValidationTime( // There is no trusted inside the enclave
 		"20220101000000",
 		"20220101000000"
@@ -187,6 +185,8 @@ inline mbedTLScpp::X509Cert IssueAppCert(
 		false,
 		mbedTLScpp::CtnFullR(authList)
 	);
+
+	auto der = certWriter.GetDer(rand);
 
 	return mbedTLScpp::X509Cert::FromDER(mbedTLScpp::CtnFullR(der));
 }

@@ -20,7 +20,7 @@ namespace Platform
 {
 
 #ifdef DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
-using RandGenerator = Trusted::Sgx::UntrustedTime;
+using RandGenerator = Trusted::Sgx::RandGenerator;
 #else
 using RandGenerator = mbedTLScpp::CtrDrbg<>;
 #endif // DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
