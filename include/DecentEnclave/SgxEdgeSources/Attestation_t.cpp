@@ -11,9 +11,8 @@
 
 #include <sgx_error.h>
 
-#include "../Common/AuthList.hpp"
 #include "../Common/Platform/Print.hpp"
-#include "../Trusted/AuthList.hpp"
+#include "../Trusted/AuthListMgr.hpp"
 #include "../Trusted/Sgx/EnclaveIdentity.hpp"
 
 
@@ -50,11 +49,9 @@ extern "C" sgx_status_t ecall_decent_common_init(
 	{
 		std::vector<uint8_t> authListAdvRlp(auth_list, auth_list + auth_list_size);
 
-		auto authList = AuthListParser().Parse(authListAdvRlp);
+		const auto& authListMgr = AuthListMgr::GetInstance(&authListAdvRlp);
 
-		GetAuthList(&authList);
-
-		size_t listLen = GetAuthList().get_HashToName().size();
+		size_t listLen = authListMgr.GetAuthList().get_HashToName().size();
 		Platform::Print::Str(
 			"AuthList loaded with " + std::to_string(listLen) + " entries\n"
 		);
