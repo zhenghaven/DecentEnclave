@@ -66,7 +66,7 @@ inline mbedTLScpp::X509Cert IssueSelfRaCert(
 			mbedTLScpp::HashType::SHA256,
 			prvKey,
 			"CN=" + selfHashHex + "_" + keyName +
-				",O=DecentEnclave,OU=EnclaveServer"
+				",O=DecentEnclave,OU=DecentServer"
 		);
 
 	mbedTLScpp::BigNum serialNum = mbedTLScpp::BigNum::Rand(32, rand);
@@ -145,7 +145,7 @@ inline mbedTLScpp::X509Cert IssueAppCert(
 			prvKey,
 			appPubKey,
 			"CN=" + enclaveHashHex + "_" + keyName +
-				",O=DecentEnclave,OU=App"
+				",O=DecentEnclave,OU=DecentApp"
 		);
 
 	mbedTLScpp::BigNum serialNum = mbedTLScpp::BigNum::Rand(32, rand);
