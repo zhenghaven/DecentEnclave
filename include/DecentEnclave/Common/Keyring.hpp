@@ -228,7 +228,7 @@ private:
 }; // class Keyring
 
 
-bool KeyringKey::IsRegistered(const Keyring& kr) const
+inline bool KeyringKey::IsRegistered(const Keyring& kr) const
 {
 	return kr.IsRegistered(GetKeySha256());
 }

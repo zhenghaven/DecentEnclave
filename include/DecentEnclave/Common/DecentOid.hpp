@@ -103,6 +103,22 @@ struct DecentOid
 	}
 
 
+	static const std::string& GetAppHashOid()
+	{
+		static const std::string oid = GetDecentEnclaveOid() + '\x05';
+
+		return oid;
+	}
+
+
+	static const std::string& GetAuthListOid()
+	{
+		static const std::string oid = GetDecentEnclaveOid() + '\x06';
+
+		return oid;
+	}
+
+
 	//==========
 	// Root.3.* - For platform specific data
 	//==========

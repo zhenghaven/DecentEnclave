@@ -211,7 +211,7 @@ private:
 }; // class CertStore
 
 
-bool CertStoreCert::IsRegistered(const CertStore& cs) const
+inline bool CertStoreCert::IsRegistered(const CertStore& cs) const
 {
 	return cs.IsRegistered(GetName());
 }
