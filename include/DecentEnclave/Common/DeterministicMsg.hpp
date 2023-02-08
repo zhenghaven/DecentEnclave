@@ -102,7 +102,7 @@ namespace Internal
 using DetMsgTupleCore = std::tuple<
 	std::pair<
 		Internal::Obj::StrKey<SIMOBJ_KSTR("Version")>,
-		Internal::Obj::String
+		Internal::Obj::UInt32
 	>,
 	std::pair<
 		Internal::Obj::StrKey<SIMOBJ_KSTR("MsgId")>,
@@ -117,7 +117,9 @@ using DetMsgTupleCore = std::tuple<
 using DetMsgParserTp = std::tuple<
 	std::pair<
 		Internal::Obj::StrKey<SIMOBJ_KSTR("Version")>,
-		Internal::AdvRlp::CatStringParser
+		Internal::AdvRlp::CatIntegerParserT<
+			Internal::AdvRlp::SpecificIntConverter<uint32_t>
+		>
 	>,
 	std::pair<
 		Internal::Obj::StrKey<SIMOBJ_KSTR("MsgId")>,
