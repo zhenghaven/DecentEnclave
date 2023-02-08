@@ -91,7 +91,7 @@ struct Print
 		Str(Ptr2Str(ptr));
 	}
 
-	static void HexDebug(const void* ptr)
+	static void PtrDebug(const void* ptr)
 	{
 		StrDebug(Ptr2Str(ptr));
 	}

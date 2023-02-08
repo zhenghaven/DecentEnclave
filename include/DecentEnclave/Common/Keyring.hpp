@@ -296,6 +296,10 @@ protected: \
 	{ \
 		return m_keyRef; \
 	} \
+	virtual std::shared_ptr<const PKeyType> GetPkeyPtr() const override \
+	{ \
+		return m_keySharedPtr; \
+	} \
 public: \
 	virtual ~DecentKey_##KEY_NAME() = default; \
 	virtual const std::string& GetName() const override \

@@ -253,28 +253,36 @@ private:
 		} \
 	}
 
+#define DECENTENCLAVE_SGX_OCALL_CHECK_ERROR_E(FUNC, ...) \
+	{ \
+		sgx_status_t mi_decentEnclaveCallEgErr = (FUNC)(__VA_ARGS__); \
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(mi_decentEnclaveCallEgErr, FUNC); \
+	}
+
 #define DECENTENCLAVE_SGX_OCALL_CHECK_ERROR_E_R(FUNC, ...) \
 	{ \
 		sgx_status_t mi_decentEnclaveCallRtErr = SGX_ERROR_UNEXPECTED; \
-		sgx_status_t mi_decentEnclaveCallEgErr = \
-			(FUNC)(&mi_decentEnclaveCallRtErr, __VA_ARGS__); \
-		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(mi_decentEnclaveCallEgErr, FUNC); \
+		DECENTENCLAVE_SGX_OCALL_CHECK_ERROR_E( \
+			FUNC, &mi_decentEnclaveCallRtErr, \
+			__VA_ARGS__ \
+		) \
 		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(mi_decentEnclaveCallRtErr, FUNC); \
+	}
+
+#define DECENTENCLAVE_SGX_ECALL_CHECK_ERROR_E(FUNC, EID, ...) \
+	{ \
+		sgx_status_t mi_decentEnclaveCallEgErr = (FUNC)(EID, __VA_ARGS__); \
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(mi_decentEnclaveCallEgErr, FUNC); \
 	}
 
 #define DECENTENCLAVE_SGX_ECALL_CHECK_ERROR_E_R(FUNC, EID, ...) \
 	{ \
 		sgx_status_t mi_decentEnclaveCallRtErr = SGX_ERROR_UNEXPECTED; \
-		sgx_status_t mi_decentEnclaveCallEgErr = \
-			(FUNC)(EID, &mi_decentEnclaveCallRtErr, __VA_ARGS__); \
-		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(mi_decentEnclaveCallEgErr, FUNC); \
+		DECENTENCLAVE_SGX_ECALL_CHECK_ERROR_E( \
+			FUNC, EID, &mi_decentEnclaveCallRtErr, \
+			__VA_ARGS__ \
+		); \
 		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(mi_decentEnclaveCallRtErr, FUNC); \
-	}
-
-#define DECENTENCLAVE_SGX_OCALL_CHECK_ERROR_E(FUNC, ...) \
-	{ \
-		sgx_status_t mi_decentEnclaveCallEgErr = (FUNC)(__VA_ARGS__); \
-		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(mi_decentEnclaveCallEgErr, FUNC); \
 	}
 
 } // namespace Sgx
