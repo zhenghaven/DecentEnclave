@@ -10,6 +10,7 @@
 
 #include "EnclaveBase.hpp"
 #include "Hosting/DecentLambdaFunc.hpp"
+#include "Hosting/HeartbeatEmitter.hpp"
 
 
 namespace DecentEnclave
@@ -20,12 +21,14 @@ namespace Untrusted
 
 class DecentEnclaveBase :
 	virtual public EnclaveBase,
-	virtual public Hosting::DecentLambdaFunc
+	virtual public Hosting::DecentLambdaFunc,
+	virtual public Hosting::HeartbeatEmitter
 {
 public: // static members:
 
 	using EncBase = EnclaveBase;
 	using LmdFuncBase = Hosting::DecentLambdaFunc;
+	using HeartbeatBase = Hosting::HeartbeatEmitter;
 
 public:
 	DecentEnclaveBase() = default;

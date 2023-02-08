@@ -16,6 +16,7 @@
 #include "../Common/Platform/Print.hpp"
 
 #include "../Trusted/DecentLambdaSvr.hpp"
+#include "../Trusted/HeartbeatEmitterMgr.hpp"
 #include "../Trusted/Sgx/ComponentConnection.hpp"
 
 
@@ -61,6 +62,27 @@ extern "C" sgx_status_t ecall_decent_lambda_handler(
 	{
 		Platform::Print::StrErr(
 			std::string("Failed to handle a Decent Lambda call: ") +
+			e.what()
+		);
+	}
+
+	return SGX_SUCCESS;
+}
+
+
+extern "C" sgx_status_t ecall_decent_heartbeat()
+{
+	using namespace DecentEnclave::Common;
+	using namespace DecentEnclave::Trusted;
+
+	try
+	{
+		HeartbeatEmitterMgr::GetInstance().EmitAll();
+	}
+	catch(const std::exception& e)
+	{
+		Platform::Print::StrErr(
+			std::string("Failed to emit heartbeat: ") +
 			e.what()
 		);
 	}

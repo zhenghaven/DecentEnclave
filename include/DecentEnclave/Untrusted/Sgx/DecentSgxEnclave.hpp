@@ -29,6 +29,12 @@ extern "C" sgx_status_t ecall_decent_lambda_handler(
 );
 
 
+extern "C" sgx_status_t ecall_decent_heartbeat(
+	sgx_enclave_id_t eid,
+	sgx_status_t* retval
+);
+
+
 namespace DecentEnclave
 {
 namespace Untrusted
@@ -110,6 +116,24 @@ public:
 		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(
 			funcRet,
 			ecall_decent_lambda_handler
+		);
+	}
+
+
+	virtual void Heartbeat() override
+	{
+		sgx_status_t funcRet = SGX_ERROR_UNEXPECTED;
+		sgx_status_t edgeRet = ecall_decent_heartbeat(
+			m_encId,
+			&funcRet
+		);
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(
+			edgeRet,
+			ecall_decent_heartbeat
+		);
+		DECENTENCLAVE_CHECK_SGX_RUNTIME_ERROR(
+			funcRet,
+			ecall_decent_heartbeat
 		);
 	}
 
