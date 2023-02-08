@@ -9,9 +9,13 @@
 #include <sgx_error.h>
 #include <SimpleObjects/Internal/make_unique.hpp>
 
+#include "../Common/DecentTlsConfig.hpp"
 #include "../Common/Internal/SimpleSysIO.hpp"
 #include "../Common/Internal/SimpleObj.hpp"
+#include "../Common/TlsSocket.hpp"
 #include "../Common/Platform/Print.hpp"
+
+#include "../Trusted/DecentLambdaSvr.hpp"
 #include "../Trusted/Sgx/ComponentConnection.hpp"
 
 
@@ -21,6 +25,7 @@ extern "C" sgx_status_t ecall_decent_lambda_handler(
 {
 	using namespace DecentEnclave::Common;
 	using namespace DecentEnclave::Common::Internal;
+	using namespace DecentEnclave::Trusted;
 	using namespace DecentEnclave::Trusted::Sgx;
 	using namespace DecentEnclave::Common::Internal::SysIO;
 
@@ -29,7 +34,36 @@ extern "C" sgx_status_t ecall_decent_lambda_handler(
 	std::unique_ptr<StreamSocket> sock =
 		Obj::Internal::make_unique<StreamSocket>(realSockPtr);
 
-	Platform::Print::StrDebug("Decent App lambda handler; work in progress...");
+	try
+	{
+		const auto& svrConfig = LambdaServerConfig::GetInstance();
+
+		auto tlsCfg = DecentTlsConfig::MakeTlsConfig(
+			true,
+			svrConfig.m_keyName,
+			svrConfig.m_certName
+		);
+		std::unique_ptr<TlsSocket> tlsSock =
+			Obj::Internal::make_unique<TlsSocket>(
+				tlsCfg,
+				nullptr,
+				std::move(sock)
+			);
+
+		auto detMsgAdvRlp = tlsSock->SizedRecvBytes<std::vector<uint8_t> >();
+
+		LambdaHandlerMgr::GetInstance().HandleCall(
+			std::move(tlsSock),
+			detMsgAdvRlp
+		);
+	}
+	catch(const std::exception& e)
+	{
+		Platform::Print::StrErr(
+			std::string("Failed to handle a Decent Lambda call: ") +
+			e.what()
+		);
+	}
 
 	return SGX_SUCCESS;
 }
