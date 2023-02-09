@@ -48,23 +48,46 @@ public:
 		m_emitterList.emplace_back(std::move(emitter));
 	}
 
-	void EmitAll() const
+	void EmitAll()
 	{
-		Common::Platform::Print::StrDebug("Emitting heartbeat...");
-
-		std::vector<std::reference_wrapper<const EmitterFunc> > emitterRefList;
+		// Obtain the list of emitters by swapping the list with an empty list
+		// So that other threads can still add new emitters meanwhile
+		EmitterListType tmpList;
 		{
 			std::lock_guard<std::mutex> lock(m_emitterListMutex);
-			emitterRefList.reserve(m_emitterList.size());
-			for (const auto& emitter : m_emitterList)
+			tmpList.swap(m_emitterList);
+		}
+
+		for (auto it = tmpList.begin(); it != tmpList.end();)
+		{
+			try
 			{
-				emitterRefList.emplace_back(emitter);
+				(*it)();
+				// If no exception is thrown, then the emitter is still valid
+				++it;
+			}
+			catch (const std::exception& e)
+			{
+				// If an exception is thrown, then the emitter is no longer valid
+				Common::Platform::Print::StrDebug(
+					std::string("Exception thrown when emitting heartbeat: ") +
+					e.what() +
+					"; The emitter will be removed"
+				);
+				it = tmpList.erase(it);
 			}
 		}
 
-		for (const EmitterFunc& emitter : emitterRefList)
+		// Put the list of valid emitters back to the list
+		// and merge with newly added emitters
 		{
-			emitter();
+			std::lock_guard<std::mutex> lock(m_emitterListMutex);
+			m_emitterList.swap(tmpList);
+			m_emitterList.insert(
+				m_emitterList.end(),
+				std::make_move_iterator(tmpList.begin()),
+				std::make_move_iterator(tmpList.end())
+			);
 		}
 	}
 

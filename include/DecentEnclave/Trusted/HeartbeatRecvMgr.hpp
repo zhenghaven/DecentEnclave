@@ -173,14 +173,6 @@ public: // static members:
 
 public:
 
-	HeartbeatRecvMgr() :
-		m_constraintMapMutex(),
-		m_constraintMap(),
-		m_socketMapMutex(),
-		m_socketMap(),
-		m_status(HeartbeatStatus::Normal)
-	{}
-
 
 	~HeartbeatRecvMgr() = default;
 
@@ -259,6 +251,16 @@ public:
 
 private:
 
+	// StartWaiting uses the singleton to remove invalid sockets
+	// so we need to make this class singleton only
+	HeartbeatRecvMgr() :
+		m_constraintMapMutex(),
+		m_constraintMap(),
+		m_socketMapMutex(),
+		m_socketMap(),
+		m_status(HeartbeatStatus::Normal)
+	{}
+
 
 	static void StartWaiting(
 		ConstraintPtrType constraint,
@@ -269,10 +271,13 @@ private:
 		std::weak_ptr<ConstraintType> weakConstraint = constraint;
 		std::weak_ptr<SocketType> weakSocket = socket;
 
+		SocketIdType socketId = GetSocketId(socket);
+
 		auto wrappedRecv = [
 			weakConstraint,
 			weakSocket,
-			recvFunc
+			recvFunc,
+			socketId
 		](std::vector<uint8_t> msg, bool hasErrorOccurred)
 		{
 			auto constraint = weakConstraint.lock();
@@ -306,12 +311,12 @@ private:
 				}
 				else
 				{
-					// TODO: garbage collection; remove the socket from the map
+					HeartbeatRecvMgr::GetInstance().RemoveSocket(socketId);
 				}
 			}
 			else
 			{
-				// TODO: garbage collection; remove the socket from the map
+				HeartbeatRecvMgr::GetInstance().RemoveSocket(socketId);
 			}
 		};
 
@@ -365,6 +370,20 @@ private:
 			// the socket is already in the map
 			// we don't accept duplicated receiver on the same socket
 			throw Common::Exception("The given socket is already in the map");
+		}
+	}
+
+
+	void RemoveSocket(
+		SocketIdType socketId
+	)
+	{
+		Common::Platform::Print::StrDebug("Removing socket: " + std::to_string(socketId));
+		std::lock_guard<std::mutex> lock(m_socketMapMutex);
+		auto it = m_socketMap.find(socketId);
+		if (it != m_socketMap.end())
+		{
+			m_socketMap.erase(it);
 		}
 	}
 
