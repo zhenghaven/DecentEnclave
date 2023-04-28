@@ -10,9 +10,10 @@
 
 #include <vector>
 
-#include <cppcodec/hex_lower.hpp>
+#include <SimpleObjects/Codec/Hex.hpp>
 
 #include "../../Common/AuthList.hpp"
+#include "../../Common/Internal/SimpleObj.hpp"
 
 
 namespace DecentEnclave
@@ -42,7 +43,7 @@ std::vector<uint8_t> ConfigToAuthListAdvRlp(
 		const auto& name = cmpConfig[String("Name")].AsString();
 
 		Bytes hash(
-			cppcodec::hex_lower::decode(hashHex.c_str(), hashHex.size())
+			Codec::Hex::Decode<std::vector<uint8_t> >(hashHex)
 		);
 
 		authList.get_HashToName()[hash] = name;

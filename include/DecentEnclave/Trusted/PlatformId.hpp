@@ -8,8 +8,7 @@
 
 #include <string>
 
-#include <cppcodec/hex_lower.hpp>
-#include <SimpleObjects/ToString.hpp>
+#include <SimpleObjects/Codec/Hex.hpp>
 
 #include "../Common/Internal/SimpleObj.hpp"
 
@@ -40,14 +39,9 @@ struct PlatformId : public PlatformIdImpl
 
 static std::string GetIdHex()
 {
-	static const auto& id = GetId();
-	static std::string idHex;
-	Common::Internal::Obj::Internal::BytesToHEX<false, char>(
-		std::back_inserter(idHex),
-		id.cbegin(),
-		id.cend()
-	);
-	return idHex;
+	return Common::Internal::Obj::Codec::Hex::Encode<std::string>(
+			GetId()
+		);
 }
 
 }; // struct PlatformId

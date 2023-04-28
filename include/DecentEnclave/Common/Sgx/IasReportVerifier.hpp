@@ -10,13 +10,14 @@
 	defined(DECENT_ENCLAVE_PLATFORM_SGX_UNTRUSTED)
 
 
-#include <cppcodec/hex_lower.hpp>
 #include <cppcodec/base64_rfc4648.hpp>
 #include <mbedTLScpp/Hash.hpp>
 #include <mbedTLScpp/X509Cert.hpp>
 #include <sgx_quote.h>
+#include <SimpleJson/Codec/Hex.hpp>
 #include <SimpleJson/SimpleJson.hpp>
 
+#include "../Internal/SimpleObj.hpp"
 #include "../Platform/Print.hpp"
 #include "Crypto.hpp"
 #include "EpidRaMessages.hpp"
@@ -117,7 +118,7 @@ protected:
 			{
 				Platform::Print::StrDebug(
 					"Verified enclave ID: " +
-					cppcodec::hex_lower::encode(mrEnclaveBytes)
+					Internal::Obj::Codec::Encode<std::string>(mrEnclaveBytes)
 				);
 				return;
 			}

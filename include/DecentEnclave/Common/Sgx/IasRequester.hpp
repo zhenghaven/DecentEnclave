@@ -93,7 +93,8 @@ public: // static members:
 
 		sgx_spid_t res;
 
-		std::vector<uint8_t> parsed = cppcodec::hex_upper::decode(spidStr);
+		std::vector<uint8_t> parsed =
+			Internal::Obj::Codec::HEX::Decode<std::vector<uint8_t> >(spidStr);
 		static_assert(
 			std::is_same<decltype(res.id[0]), uint8_t&>::value,
 			"SPID value type mismatch"

@@ -12,7 +12,10 @@
 #include <limits>
 #include <unordered_map>
 
+#include <SimpleObjects/Internal/make_unique.hpp>
+
 #include "../Common/Exceptions.hpp"
+#include "../Common/Internal/SimpleObj.hpp"
 
 
 namespace DecentEnclave
@@ -54,7 +57,7 @@ public:
 	template<typename ... _Args>
 	void DispatchCallback(IDType id, bool dispose, _Args&& ... args)
 	{
-		CallbackFuncType callback;
+		std::unique_ptr<CallbackFuncType> callback;
 
 		{
 			std::lock_guard<std::mutex> lock(m_counterMutex);
@@ -66,24 +69,30 @@ public:
 				throw Common::Exception("Callback ID is not registered.");
 			}
 
+			using namespace Common::Internal::Obj::Internal;
+
 			if (dispose)
 			{
 				// move the callback function out of the map
 				// and dispose the callback entry
-				callback = std::move(it->second);
+				callback = make_unique<CallbackFuncType>(
+					std::move(it->second)
+				);
 				m_callbackMap.erase(it);
 			}
 			else
 			{
 				// copy the callback function out of the map
 				// and keep the callback entry
-				callback = it->second;
+				callback = make_unique<CallbackFuncType>(
+					it->second
+				);
 			}
 		}
 		// release the lock
 
 		// call the callback function
-		callback(std::forward<_Args>(args)...);
+		(*callback)(std::forward<_Args>(args)...);
 	}
 
 

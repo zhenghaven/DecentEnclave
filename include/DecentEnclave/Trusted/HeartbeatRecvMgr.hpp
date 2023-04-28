@@ -321,8 +321,7 @@ private:
 		};
 
 		using namespace Common::Internal::SysIO;
-		StreamSocketAsync::RecvAndFillSizedBytes<std::vector<uint8_t> >(
-			socket,
+		socket->AsyncSizedRecvBytes<std::vector<uint8_t> >(
 			std::move(wrappedRecv)
 		);
 	}

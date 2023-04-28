@@ -14,11 +14,13 @@
 #include <vector>
 
 #include <cppcodec/base64_rfc4648.hpp>
-#include <cppcodec/hex_lower.hpp>
 #include <sgx_report.h>
+
+#include <SimpleObjects/Codec/Hex.hpp>
 
 #include "../CUrl.hpp"
 #include "../../Common/Exceptions.hpp"
+#include "../../Common/Internal/SimpleObj.hpp"
 #include "../../Common/Sgx/IasRequester.hpp"
 
 
@@ -212,7 +214,7 @@ private:
 	{
 		std::vector<uint8_t> gidLitEnd(std::begin(gid), std::end(gid));
 		std::vector<uint8_t> gidBigEnd(gidLitEnd.rbegin(), gidLitEnd.rend());
-		return cppcodec::hex_lower::encode(gidBigEnd);
+		return Common::Internal::Obj::Codec::Hex::Encode<std::string>(gidBigEnd);
 	}
 
 	std::string m_iasUrl;
