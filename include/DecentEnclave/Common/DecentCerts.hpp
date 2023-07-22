@@ -17,6 +17,7 @@
 #include <mbedTLScpp/PKey.hpp>
 #include <mbedTLScpp/RandInterfaces.hpp>
 #include <mbedTLScpp/X509Cert.hpp>
+#include <SimpleObjects/Codec/Hex.hpp>
 #include <SimpleObjects/SimpleObjects.hpp>
 
 #include "Internal/SimpleObj.hpp"
@@ -131,12 +132,8 @@ inline mbedTLScpp::X509Cert IssueAppCert(
 {
 	const DecentCertConfigs& certConfig = DecentCertConfigs::GetDefault();
 
-	std::string enclaveHashHex;
-	SimpleObjects::Internal::BytesToHEX<false, char>(
-		std::back_inserter(enclaveHashHex),
-		enclaveHash.begin(),
-		enclaveHash.end()
-	);
+	std::string enclaveHashHex = Internal::Obj::Codec::HEX::
+		template Encode<std::string>(enclaveHash);
 
 	mbedTLScpp::X509CertWriter certWriter =
 		mbedTLScpp::X509CertWriter::CaSign(

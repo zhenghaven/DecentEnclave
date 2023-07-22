@@ -16,14 +16,16 @@
 #include <type_traits>
 
 #include <AdvancedRlp/AdvancedRlp.hpp>
-#include <cppcodec/base64_default_rfc4648.hpp>
 #include <mbedTLScpp/EcKey.hpp>
 #include <mbedTLScpp/Hkdf.hpp>
 #include <mbedTLScpp/SecretArray.hpp>
 #include <sgx_ukey_exchange.h>
 #include <SimpleJson/SimpleJson.hpp>
+#include <SimpleObjects/Codec/Base64.hpp>
+#include <SimpleObjects/Codec/Hex.hpp>
 #include <SimpleObjects/SimpleObjects.hpp>
 
+#include "../Internal/SimpleObj.hpp"
 #include "../Platform/Print.hpp"
 #include "AttestationConfig.hpp"
 #include "Crypto.hpp"
@@ -73,13 +75,8 @@ public: // static members:
 		std::vector<uint8_t> randBytes(len / 2);
 		randGen.Rand(randBytes.data(), randBytes.size());
 
-		std::string res;
-		res.reserve(len);
-		SimpleObjects::Internal::BytesToHEX<false, char>(
-			std::back_inserter(res),
-			randBytes.begin(),
-			randBytes.end()
-		);
+		std::string res = Internal::Obj::Codec::HEX::
+			template Encode<std::string>(randBytes);
 
 		return res;
 	}
@@ -273,7 +270,8 @@ public:
 		std::string sigrlB64 = m_iasReq->GetSigrl(msg1.gid);
 		Platform::Print::StrDebug("SigRL: " + sigrlB64);
 		std::vector<uint8_t> sigRL =
-			cppcodec::base64_rfc4648::decode(sigrlB64);
+			Internal::Obj::Codec::Base64::
+				template Decode<std::vector<uint8_t> >(sigrlB64);
 
 		msg2Ref.sig_rl_size = static_cast<uint32_t>(sigRL.size());
 		res.insert(res.end(), sigRL.begin(), sigRL.end());
@@ -427,9 +425,9 @@ protected:
 
 		static const std::array<uint8_t, sizeof(sgx_ps_sec_prop_desc_t)>
 			sk_zeroSecPropDesc = { 0 };
-		static const SimpleObjects::String sk_labelQuote = "isvEnclaveQuote";
-		static const SimpleObjects::String sk_labelNonce = "nonce";
-		static const SimpleObjects::String sk_labelPseMa = "pseManifest";
+		static const Internal::Obj::String sk_labelQuote = "isvEnclaveQuote";
+		static const Internal::Obj::String sk_labelNonce = "nonce";
+		static const Internal::Obj::String sk_labelPseMa = "pseManifest";
 
 
 		const uint8_t* quotePtr = reinterpret_cast<const uint8_t*>(&msg3.quote);
@@ -449,23 +447,23 @@ protected:
 		)
 		{
 			// PSE manifest presents
-			pseManifestStr = cppcodec::base64_rfc4648::encode(
-				msg3.ps_sec_prop.sgx_ps_sec_prop_desc
-			);
+			pseManifestStr = Internal::Obj::Codec::Base64::
+				template Encode<std::string>(
+					msg3.ps_sec_prop.sgx_ps_sec_prop_desc
+				);
 		}
 		else
 		{
 			Platform::Print::StrDebug("PSE is not enabled during RA");
 		}
 
-		auto jsonObj = SimpleObjects::Dict();
-		jsonObj[sk_labelQuote] = SimpleObjects::String(
-				cppcodec::base64_rfc4648::encode(quote)
-			);
-		jsonObj[sk_labelNonce] = SimpleObjects::String(nonce);
+		auto jsonObj = Internal::Obj::Dict();
+		jsonObj[sk_labelQuote] = Internal::Obj::Codec::Base64::
+			template Encode<Internal::Obj::String>(quote);
+		jsonObj[sk_labelNonce] = Internal::Obj::String(nonce);
 		if (!pseManifestStr.empty())
 		{
-			jsonObj[sk_labelPseMa] = SimpleObjects::String(pseManifestStr);
+			jsonObj[sk_labelPseMa] = Internal::Obj::String(pseManifestStr);
 		}
 
 		std::string json = SimpleJson::DumpStr(jsonObj);
@@ -484,14 +482,14 @@ protected:
 			mbedTLScpp::CipherMode::ECB
 		>;
 
-		static const SimpleObjects::String sk_labelVRes = "VerifyResult";
-		static const SimpleObjects::String sk_labelRepSet = "ReportSet";
-		static const SimpleObjects::String sk_labelMsgBody = "MsgBody";
-		static const SimpleObjects::String sk_labelMac = "MAC";
+		static const Internal::Obj::String sk_labelVRes = "VerifyResult";
+		static const Internal::Obj::String sk_labelRepSet = "ReportSet";
+		static const Internal::Obj::String sk_labelMsgBody = "MsgBody";
+		static const Internal::Obj::String sk_labelMac = "MAC";
 
-		auto msg4Body = SimpleObjects::Dict();
-		msg4Body[sk_labelVRes] = SimpleObjects::Bool(vrfyRes);
-		msg4Body[sk_labelRepSet] = SimpleObjects::Bytes(
+		auto msg4Body = Internal::Obj::Dict();
+		msg4Body[sk_labelVRes] = Internal::Obj::Bool(vrfyRes);
+		msg4Body[sk_labelRepSet] = Internal::Obj::Bytes(
 			SimpleRlp::WriterGeneric::Write(m_iasReportSet)
 		);
 		auto msg4BodyBytes = AdvancedRlp::GenericWriter::Write(msg4Body);
@@ -500,9 +498,9 @@ protected:
 			mbedTLScpp::CtnFullR(msg4BodyBytes)
 		);
 
-		auto msg4 = SimpleObjects::Dict();
-		msg4[sk_labelMsgBody] = SimpleObjects::Bytes(msg4BodyBytes);
-		msg4[sk_labelMac] = SimpleObjects::Bytes(
+		auto msg4 = Internal::Obj::Dict();
+		msg4[sk_labelMsgBody] = Internal::Obj::Bytes(msg4BodyBytes);
+		msg4[sk_labelMac] = Internal::Obj::Bytes(
 			cmacRes.begin(),
 			cmacRes.end()
 		);

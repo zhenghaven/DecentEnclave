@@ -15,7 +15,7 @@
 #include <iostream>
 #endif // DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
 
-#include <SimpleObjects/ToString.hpp>
+#include <SimpleObjects/Codec/Hex.hpp>
 
 #include "../Exceptions.hpp"
 #include "../Internal/SimpleObj.hpp"
@@ -66,24 +66,24 @@ struct Print
 
 	static void Hex(const void* data, const size_t size)
 	{
-		std::string res;
-		Common::Internal::Obj::Internal::BytesToHEX<false, char>(
-			std::back_inserter(res),
-			static_cast<const uint8_t*>(data),
-			static_cast<const uint8_t*>(data) + size
+		const uint8_t* byteDataPtr = static_cast<const uint8_t*>(data);
+		Str(
+			Common::Internal::Obj::Codec::HEX::template Encode<std::string>(
+				byteDataPtr,
+				byteDataPtr + size
+			)
 		);
-		Str(res);
 	}
 
 	static void HexDebug(const void* data, const size_t size)
 	{
-		std::string res;
-		Common::Internal::Obj::Internal::BytesToHEX<false, char>(
-			std::back_inserter(res),
-			static_cast<const uint8_t*>(data),
-			static_cast<const uint8_t*>(data) + size
+		const uint8_t* byteDataPtr = static_cast<const uint8_t*>(data);
+		StrDebug(
+			Common::Internal::Obj::Codec::HEX::template Encode<std::string>(
+				byteDataPtr,
+				byteDataPtr + size
+			)
 		);
-		StrDebug(res);
 	}
 
 	static void Ptr(const void* ptr)
@@ -147,13 +147,8 @@ struct Print
 	{
 		auto val = reinterpret_cast<std::uintptr_t>(ptr);
 
-		std::string res;
-		Common::Internal::Obj::Internal::PrimitiveToHEX<true, char>(
-			std::back_inserter(res),
-			val
-		);
-
-		return res;
+		return Common::Internal::Obj::Codec::HEX::
+			template Encode<std::string>(val);
 	}
 
 }; // struct Print

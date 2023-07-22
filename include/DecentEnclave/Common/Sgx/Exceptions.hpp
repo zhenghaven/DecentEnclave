@@ -13,9 +13,10 @@
 #include <type_traits>
 
 #include <sgx_error.h>
-#include <SimpleObjects/ToString.hpp>
+#include <SimpleObjects/Codec/Hex.hpp>
 
 #include "../Exceptions.hpp"
+#include "../Internal/SimpleObj.hpp"
 
 
 namespace DecentEnclave
@@ -203,12 +204,8 @@ public: // static members:
 	{
 		using _UnderType = std::underlying_type<sgx_status_t>::type;
 
-		std::string errStr;
-		SimpleObjects::Internal::PrimitiveToHEX<true, char>(
-			std::back_inserter(errStr),
-			static_cast<_UnderType>(errCode)
-		);
-		return errStr;
+		return Internal::Obj::Codec::HEX::
+			template Encode<std::string>(static_cast<_UnderType>(errCode));
 	}
 
 

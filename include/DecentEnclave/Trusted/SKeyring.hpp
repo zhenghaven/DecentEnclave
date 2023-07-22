@@ -17,7 +17,7 @@
 #include <mbedTLScpp/Hkdf.hpp>
 #include <mbedTLScpp/SecretVector.hpp>
 #include <mbedTLScpp/SKey.hpp>
-#include <SimpleObjects/ToString.hpp>
+#include <SimpleObjects/Codec/Hex.hpp>
 
 #include "../Common/Exceptions.hpp"
 
@@ -108,12 +108,8 @@ public:
 		m_keyMap()
 	{
 #ifdef DECENTENCLAVE_SGX_DEBUG_FLAG
-		std::string keyHex;
-		Common::Internal::Obj::Internal::BytesToHEX<false, char>(
-			std::back_inserter(keyHex),
-			m_rootKey.data(),
-			m_rootKey.data() + m_rootKey.size()
-		);
+		std::string keyHex = Common::Internal::Obj::Codec::HEX::
+			template Encode<std::string>(m_rootKey);
 		Common::Platform::Print::StrDebug(
 			"Decent root seal key          : " + keyHex
 		);

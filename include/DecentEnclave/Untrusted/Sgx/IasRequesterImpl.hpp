@@ -13,9 +13,9 @@
 #include <string>
 #include <vector>
 
-#include <cppcodec/base64_rfc4648.hpp>
 #include <sgx_report.h>
 
+#include <SimpleObjects/Codec/Base64.hpp>
 #include <SimpleObjects/Codec/Hex.hpp>
 
 #include "../CUrl.hpp"
@@ -197,11 +197,8 @@ public:
 
 		reportSet.get_Report() = Common::Sgx::GetSimpleBytesFromStr(respBody);
 
-		std::vector<uint8_t> reportSignBytes =
-			cppcodec::base64_rfc4648::decode(iasSign);
-		reportSet.get_ReportSign() = SimpleObjects::Bytes(
-			std::move(reportSignBytes)
-		);
+		reportSet.get_ReportSign() = Common::Internal::Obj::Codec::Base64::
+			template Decode<Common::Internal::Obj::Bytes>(iasSign);
 
 		Common::Sgx::CertPEM2DERList(reportSet.get_IasCert(), iasCert);
 

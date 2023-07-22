@@ -13,7 +13,7 @@
 
 #include <mbedTLScpp/Hash.hpp>
 #include <mbedTLScpp/PKey.hpp>
-#include <SimpleObjects/ToString.hpp>
+#include <SimpleObjects/Codec/Hex.hpp>
 
 #include "../Common/Internal/SimpleObj.hpp"
 
@@ -81,14 +81,8 @@ public:
 
 	std::string GetKeySha256Hex() const
 	{
-		auto hash = GetKeySha256();
-		std::string HEXStr;
-		Common::Internal::Obj::Internal::BytesToHEX<false, char>(
-			std::back_inserter(HEXStr),
-			hash.begin(),
-			hash.end()
-		);
-		return HEXStr;
+		return Common::Internal::Obj::Codec::HEX::
+			template Encode<std::string>(GetKeySha256());
 	}
 
 

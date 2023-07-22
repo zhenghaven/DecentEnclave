@@ -25,7 +25,7 @@
 
 #include <mbedTLScpp/SKey.hpp>
 #include <mbedTLScpp/Hash.hpp>
-#include <SimpleObjects/ToString.hpp>
+#include <SimpleObjects/Codec/Hex.hpp>
 
 #include "../../Common/Internal/SimpleObj.hpp"
 #include "../../Common/Sgx/Exceptions.hpp"
@@ -254,12 +254,8 @@ private:
 		);
 
 #ifdef DECENTENCLAVE_SGX_DEBUG_FLAG
-		std::string keyHex;
-		Common::Internal::Obj::Internal::BytesToHEX<false, char>(
-			std::back_inserter(keyHex),
-			key.data(),
-			key.data() + key.size()
-		);
+		std::string keyHex = Common::Internal::Obj::Codec::HEX::
+			template Encode<std::string>(key);
 		Common::Platform::Print::StrDebug(
 			"Key generated for PlatformId  : " + keyHex
 		);

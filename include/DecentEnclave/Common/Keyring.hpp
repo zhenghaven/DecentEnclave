@@ -121,14 +121,8 @@ public:
 
 	std::string GenHashHex() const
 	{
-		auto hash = GenHash();
-		std::string HEXStr;
-		Common::Internal::Obj::Internal::BytesToHEX<false, char>(
-			std::back_inserter(HEXStr),
-			hash.begin(),
-			hash.end()
-		);
-		return HEXStr;
+		return Common::Internal::Obj::Codec::HEX::
+			template Encode<std::string>(GenHash());
 	}
 
 

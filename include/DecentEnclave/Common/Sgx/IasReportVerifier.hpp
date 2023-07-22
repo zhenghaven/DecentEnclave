@@ -10,12 +10,12 @@
 	defined(DECENT_ENCLAVE_PLATFORM_SGX_UNTRUSTED)
 
 
-#include <cppcodec/base64_rfc4648.hpp>
 #include <mbedTLScpp/Hash.hpp>
 #include <mbedTLScpp/X509Cert.hpp>
 #include <sgx_quote.h>
-#include <SimpleJson/Codec/Hex.hpp>
 #include <SimpleJson/SimpleJson.hpp>
+#include <SimpleObjects/Codec/Base64.hpp>
+#include <SimpleObjects/Codec/Hex.hpp>
 
 #include "../Internal/SimpleObj.hpp"
 #include "../Platform/Print.hpp"
@@ -37,24 +37,21 @@ public: // static members:
 
 	static sgx_quote_t ParseQuoteFromB64(const char* b64Str, size_t b64StrLen)
 	{
-		sgx_quote_t res;
-		uint8_t* resPtr = reinterpret_cast<uint8_t*>(&res);
-
-		size_t decodeSize = cppcodec::base64_rfc4648::decode(
-			resPtr,
-			sizeof(sgx_quote_t),
-			b64Str,
-			b64StrLen
-		);
+		auto decoded = Internal::Obj::Codec::Base64::
+			template Decode<std::vector<uint8_t> >(b64Str, b64Str + b64StrLen);
 
 		// Base 64-encoded BODY of QUOTE structure (i.e., QUOTE
 		// structure without signature related fields: SIG_LEN and SIG)
-		if (decodeSize < (sizeof(sgx_quote_t) - sizeof(uint32_t)))
+		if (decoded.size() != (sizeof(sgx_quote_t) - sizeof(uint32_t)))
 		{
 			throw Exception("Failed to decode the quote body");
 		}
 
+		sgx_quote_t res;
 		res.signature_len = 0;
+
+		uint8_t* resPtr = reinterpret_cast<uint8_t*>(&res);
+		std::memcpy(resPtr, decoded.data(), decoded.size());
 
 		return res;
 	}
@@ -118,7 +115,8 @@ protected:
 			{
 				Platform::Print::StrDebug(
 					"Verified enclave ID: " +
-					Internal::Obj::Codec::Encode<std::string>(mrEnclaveBytes)
+					Internal::Obj::Codec::HEX::
+						template Encode<std::string>(mrEnclaveBytes)
 				);
 				return;
 			}
@@ -302,11 +300,8 @@ protected:
 		);
 		if (vrfyFlags != 0)
 		{
-			std::string flagStr;
-			SimpleObjects::Internal::PrimitiveToHEX<true, char>(
-				std::back_inserter(flagStr),
-				vrfyFlags
-			);
+			std::string flagStr = Internal::Obj::Codec::HEX::
+				template Encode<std::string>(vrfyFlags);
 
 			throw Exception(
 				"IAS certificate verification failed (flags=" + flagStr + ")"
@@ -363,12 +358,12 @@ protected:
 
 	virtual void VerifyReport(
 		const IasReportSet& /* reportSet */,
-		const SimpleObjects::DictBaseObj& parsedReport,
+		const Internal::Obj::DictBaseObj& parsedReport,
 		const std::string* nonce
 	)
 	{
-		static const SimpleObjects::String sk_labelNonce = "nonce";
-		static const SimpleObjects::String sk_labelStatus =
+		static const Internal::Obj::String sk_labelNonce = "nonce";
+		static const Internal::Obj::String sk_labelStatus =
 			"isvEnclaveQuoteStatus";
 
 		if (nonce != nullptr)
@@ -380,10 +375,10 @@ protected:
 				throw Exception("nonce field is missing from IAS report");
 			}
 
-			SimpleObjects::String nonceStr = *nonce;
+			Internal::Obj::String nonceStr = *nonce;
 			if (
 				(*it).AsString() !=
-				static_cast<const SimpleObjects::StringBaseObj&>(nonceStr)
+				static_cast<const Internal::Obj::StringBaseObj&>(nonceStr)
 			)
 			{
 				throw Exception("IAS report nonce does not match");
@@ -402,20 +397,20 @@ protected:
 
 
 	virtual void VerifyEncQuoteStatus(
-		const SimpleObjects::StringBaseObj& statusStr
+		const Internal::Obj::StringBaseObj& statusStr
 	)
 	{
-		using _StrBase = SimpleObjects::StringBaseObj;
+		using _StrBase = Internal::Obj::StringBaseObj;
 
-		static const SimpleObjects::String sk_statusOK =
+		static const Internal::Obj::String sk_statusOK =
 			"OK";
-		static const SimpleObjects::String sk_statusGrpOutdate =
+		static const Internal::Obj::String sk_statusGrpOutdate =
 			"GROUP_OUT_OF_DATE";
-		static const SimpleObjects::String sk_statusConfNeed =
+		static const Internal::Obj::String sk_statusConfNeed =
 			"CONFIGURATION_NEEDED";
-		static const SimpleObjects::String sk_statusSwNeed =
+		static const Internal::Obj::String sk_statusSwNeed =
 			"SW_HARDENING_NEEDED";
-		static const SimpleObjects::String sk_statusConfSwNeed =
+		static const Internal::Obj::String sk_statusConfSwNeed =
 			"CONFIGURATION_AND_SW_HARDENING_NEEDED";
 
 		if (
@@ -436,11 +431,11 @@ protected:
 
 	virtual void VerifyEncQuote(
 		const IasReportSet& /* reportSet */,
-		const SimpleObjects::DictBaseObj& parsedReport,
+		const Internal::Obj::DictBaseObj& parsedReport,
 		EpidQuoteVerifier& epidQuoteVerifier
 	)
 	{
-		static const SimpleObjects::String sk_labelQuote =
+		static const Internal::Obj::String sk_labelQuote =
 			"isvEnclaveQuoteBody";
 
 		auto it = parsedReport.FindVal(sk_labelQuote);

@@ -12,10 +12,10 @@
 
 #include <string>
 
-#include <cppcodec/hex_default_upper.hpp>
 #include <sgx_quote.h>
 
 #include "../Exceptions.hpp"
+#include "../Internal/SimpleObj.hpp"
 #include "EpidRaMessages.hpp"
 
 
@@ -83,18 +83,15 @@ public: // static members:
 
 	static sgx_spid_t ParseSpid(const std::string& spidStr)
 	{
-		if (
-			sizeof(sgx_spid_t) !=
-			cppcodec::hex_upper::decoded_max_size(spidStr.size())
-		)
+		if (sizeof(sgx_spid_t) != (spidStr.size() / 2))
 		{
 			throw InvalidArgumentException("Invalid SPID string");
 		}
 
 		sgx_spid_t res;
 
-		std::vector<uint8_t> parsed =
-			Internal::Obj::Codec::HEX::Decode<std::vector<uint8_t> >(spidStr);
+		std::vector<uint8_t> parsed = Internal::Obj::Codec::HEX::
+			template Decode<std::vector<uint8_t> >(spidStr);
 		static_assert(
 			std::is_same<decltype(res.id[0]), uint8_t&>::value,
 			"SPID value type mismatch"

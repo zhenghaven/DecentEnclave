@@ -62,13 +62,8 @@ struct EnclaveIdentity
 
 	static std::string BuildSelfHashHex()
 	{
-		std::string HEXStr;
-		Common::Internal::Obj::Internal::BytesToHEX<false, char>(
-			std::back_inserter(HEXStr),
-			GetSelfHash().begin(),
-			GetSelfHash().end()
-		);
-		return HEXStr;
+		return Common::Internal::Obj::Codec::HEX::
+			template Encode<std::string>(GetSelfHash());
 	}
 
 
