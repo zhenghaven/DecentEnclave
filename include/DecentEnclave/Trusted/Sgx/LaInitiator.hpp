@@ -14,6 +14,7 @@
 #include <mbedTLScpp/SKey.hpp>
 
 #include "../../Common/AesGcmSocketHandshaker.hpp"
+#include "../../Common/Internal/SimpleSysIO.hpp"
 #include "../../Common/Sgx/Crypto.hpp"
 #include "../../Common/Sgx/Exceptions.hpp"
 
@@ -149,7 +150,9 @@ public:
 	}
 
 
-	virtual void HandshakeStep(SimpleSysIO::StreamSocketBase& sock) override
+	virtual void HandshakeStep(
+		Common::Internal::SysIO::StreamSocketBase& sock
+	) override
 	{
 		switch (m_state)
 		{

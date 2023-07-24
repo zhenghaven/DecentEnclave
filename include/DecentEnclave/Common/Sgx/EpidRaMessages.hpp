@@ -14,6 +14,9 @@
 #include <sgx_tcrypto.h>
 #include <SimpleRlp/SimpleRlp.hpp>
 
+#include "../Internal/SimpleObj.hpp"
+#include "../Internal/SimpleRlp.hpp"
+
 
 #if defined(DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED) || \
 	defined(DECENT_ENCLAVE_PLATFORM_SGX_UNTRUSTED)
@@ -51,66 +54,66 @@ namespace Sgx
 
 using IasReportSetCore = std::tuple<
 	std::pair<
-		SimpleObjects::StrKey<SIMOBJ_KSTR("IasCert")>,
-		SimpleObjects::ListT<
-			SimpleObjects::Bytes
+		Internal::Obj::StrKey<SIMOBJ_KSTR("IasCert")>,
+		Internal::Obj::ListT<
+			Internal::Obj::Bytes
 		>
 	>,
 	std::pair<
-		SimpleObjects::StrKey<SIMOBJ_KSTR("Report")>,
-		SimpleObjects::Bytes
+		Internal::Obj::StrKey<SIMOBJ_KSTR("Report")>,
+		Internal::Obj::Bytes
 	>,
 	std::pair<
-		SimpleObjects::StrKey<SIMOBJ_KSTR("ReportSign")>,
-		SimpleObjects::Bytes
+		Internal::Obj::StrKey<SIMOBJ_KSTR("ReportSign")>,
+		Internal::Obj::Bytes
 	>
 >;
 
 
 class IasReportSet :
-	public SimpleObjects::StaticDict<IasReportSetCore>
+	public Internal::Obj::StaticDict<IasReportSetCore>
 {
 public: // static members:
 
 	using Self = IasReportSet;
-	using Base = SimpleObjects::StaticDict<IasReportSetCore>;
+	using Base = Internal::Obj::StaticDict<IasReportSetCore>;
 
-	using IasCertType = SimpleObjects::ListT<
-		SimpleObjects::Bytes
+	using IasCertType = Internal::Obj::ListT<
+		Internal::Obj::Bytes
 	>;
 
 public:
 
 	using Base::Base;
 
-	SimpleObjects::Bytes& get_ReportSign()
+	Internal::Obj::Bytes& get_ReportSign()
 	{
-		return Base::get<SimpleObjects::StrKey<SIMOBJ_KSTR("ReportSign")> >();
+		return Base::get<Internal::Obj::StrKey<SIMOBJ_KSTR("ReportSign")> >();
 	}
 
-	const SimpleObjects::Bytes& get_ReportSign() const
+	const Internal::Obj::Bytes& get_ReportSign() const
 	{
-		return Base::get<SimpleObjects::StrKey<SIMOBJ_KSTR("ReportSign")> >();
+		return Base::get<Internal::Obj::StrKey<SIMOBJ_KSTR("ReportSign")> >();
 	}
 
 	IasCertType& get_IasCert()
 	{
-		return Base::get<SimpleObjects::StrKey<SIMOBJ_KSTR("IasCert")> >();
+		return Base::get<Internal::Obj::StrKey<SIMOBJ_KSTR("IasCert")> >();
 	}
 
 	const IasCertType& get_IasCert() const
 	{
-		return Base::get<SimpleObjects::StrKey<SIMOBJ_KSTR("IasCert")> >();
+		return Base::get<Internal::Obj::StrKey<SIMOBJ_KSTR("IasCert")> >();
 	}
 
-	SimpleObjects::Bytes& get_Report()
+	Internal::Obj::Bytes& get_Report()
 	{
-		return Base::get<SimpleObjects::StrKey<SIMOBJ_KSTR("Report")> >();
+		return Base::get<Internal::Obj::StrKey<SIMOBJ_KSTR("Report")> >();
 	}
 
-	const SimpleObjects::Bytes& get_Report() const
+	const Internal::Obj::Bytes& get_Report() const
 	{
-		return Base::get<SimpleObjects::StrKey<SIMOBJ_KSTR("Report")> >();
+		return Base::get<Internal::Obj::StrKey<SIMOBJ_KSTR("Report")> >();
 	}
 
 }; // class IasReportSet
@@ -118,27 +121,27 @@ public:
 
 using IasReportSetParserCore = std::tuple<
 	std::pair<
-		SimpleObjects::StrKey<SIMOBJ_KSTR("IasCert")>,
-		SimpleRlp::ListParserT<
-			SimpleRlp::BytesParser,
-			SimpleRlp::FailingParserBytes,
-			SimpleObjects::ListT<
-				SimpleObjects::Bytes
+		Internal::Obj::StrKey<SIMOBJ_KSTR("IasCert")>,
+		Internal::Rlp::ListParserT<
+			Internal::Rlp::BytesParser,
+			Internal::Rlp::FailingParserBytes,
+			Internal::Obj::ListT<
+				Internal::Obj::Bytes
 			>
 		>
 	>,
 	std::pair<
-		SimpleObjects::StrKey<SIMOBJ_KSTR("Report")>,
-		SimpleRlp::BytesParser
+		Internal::Obj::StrKey<SIMOBJ_KSTR("Report")>,
+		Internal::Rlp::BytesParser
 	>,
 	std::pair<
-		SimpleObjects::StrKey<SIMOBJ_KSTR("ReportSign")>,
-		SimpleRlp::BytesParser
+		Internal::Obj::StrKey<SIMOBJ_KSTR("ReportSign")>,
+		Internal::Rlp::BytesParser
 	>
 >;
 
 
-using IasReportSetParser = SimpleRlp::StaticDictParserT<
+using IasReportSetParser = Internal::Rlp::StaticDictParserT<
 	IasReportSetParserCore,
 	false, /* No missing items allowed */
 	false, /* No extra items allowed */
@@ -146,7 +149,7 @@ using IasReportSetParser = SimpleRlp::StaticDictParserT<
 >;
 
 
-inline std::string GetStrFromSimpleBytes(const SimpleObjects::Bytes& b)
+inline std::string GetStrFromSimpleBytes(const Internal::Obj::Bytes& b)
 {
 	return std::string(
 		reinterpret_cast<const char*>(b.data()),
@@ -155,9 +158,9 @@ inline std::string GetStrFromSimpleBytes(const SimpleObjects::Bytes& b)
 }
 
 
-inline SimpleObjects::Bytes GetSimpleBytesFromStr(const std::string& s)
+inline Internal::Obj::Bytes GetSimpleBytesFromStr(const std::string& s)
 {
-	return SimpleObjects::Bytes(
+	return Internal::Obj::Bytes(
 		reinterpret_cast<const uint8_t*>(s.data()),
 		reinterpret_cast<const uint8_t*>(s.data() + s.size())
 	);
@@ -173,7 +176,7 @@ inline void X509Cert2DERList(
 	do
 	{
 		derList.push_back(
-			SimpleObjects::Bytes(
+			Internal::Obj::Bytes(
 				cert.GetDer()
 			)
 		);

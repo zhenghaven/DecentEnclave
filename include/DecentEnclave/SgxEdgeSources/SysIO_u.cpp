@@ -12,6 +12,7 @@
 #include <SimpleObjects/Internal/make_unique.hpp>
 #include <SimpleSysIO/SysCall/Files.hpp>
 
+#include "../Common/Internal/SimpleObj.hpp"
 #include "../Common/Internal/SimpleSysIO.hpp"
 #include "../Common/Platform/Print.hpp"
 #include "../Common/Sgx/Exceptions.hpp"
@@ -66,10 +67,12 @@ extern "C" sgx_status_t ocall_decent_untrusted_file_open(
 	const char* mode
 )
 {
-	using namespace SimpleSysIO::SysCall::SysCallInternal;
+	using namespace DecentEnclave::Common::Internal::SysIO::
+		SysCall::SysCallInternal;
+	using namespace DecentEnclave::Common::Internal::Obj::Internal;
 	try
 	{
-		auto inst = SimpleObjects::Internal::make_unique<COpenImpl>(path, mode);
+		auto inst = make_unique<COpenImpl>(path, mode);
 		*ptr = inst.release();
 		return SGX_SUCCESS;
 	}
@@ -87,7 +90,8 @@ extern "C" void ocall_decent_untrusted_file_close(
 	void* ptr
 )
 {
-	using namespace SimpleSysIO::SysCall::SysCallInternal;
+	using namespace DecentEnclave::Common::Internal::SysIO::
+		SysCall::SysCallInternal;
 	COpenImpl* realPtr = static_cast<COpenImpl*>(ptr);
 
 	delete realPtr;
@@ -99,8 +103,9 @@ extern "C" sgx_status_t ocall_decent_untrusted_file_seek(
 	uint8_t whence
 )
 {
-	using namespace SimpleSysIO;
-	using namespace SimpleSysIO::SysCall::SysCallInternal;
+	using namespace DecentEnclave::Common::Internal::SysIO;
+	using namespace DecentEnclave::Common::Internal::SysIO::
+		SysCall::SysCallInternal;
 	COpenImpl* realPtr = static_cast<COpenImpl*>(ptr);
 
 	try
@@ -123,7 +128,8 @@ extern "C" sgx_status_t ocall_decent_untrusted_file_tell(
 	size_t* out_val
 )
 {
-	using namespace SimpleSysIO::SysCall::SysCallInternal;
+	using namespace DecentEnclave::Common::Internal::SysIO::
+		SysCall::SysCallInternal;
 	const COpenImpl* realPtr = static_cast<const COpenImpl*>(ptr);
 
 	try
@@ -145,7 +151,8 @@ extern "C" sgx_status_t ocall_decent_untrusted_file_flush(
 	void* ptr
 )
 {
-	using namespace SimpleSysIO::SysCall::SysCallInternal;
+	using namespace DecentEnclave::Common::Internal::SysIO::
+		SysCall::SysCallInternal;
 	COpenImpl* realPtr = static_cast<COpenImpl*>(ptr);
 
 	try
@@ -170,7 +177,8 @@ extern "C" sgx_status_t ocall_decent_untrusted_file_read(
 	size_t* out_buf_size
 )
 {
-	using namespace SimpleSysIO::SysCall::SysCallInternal;
+	using namespace DecentEnclave::Common::Internal::SysIO::
+		SysCall::SysCallInternal;
 	COpenImpl* realPtr = static_cast<COpenImpl*>(ptr);
 
 	try
@@ -196,7 +204,8 @@ extern "C" sgx_status_t ocall_decent_untrusted_file_write(
 	size_t* out_size
 )
 {
-	using namespace SimpleSysIO::SysCall::SysCallInternal;
+	using namespace DecentEnclave::Common::Internal::SysIO::
+		SysCall::SysCallInternal;
 	COpenImpl* realPtr = static_cast<COpenImpl*>(ptr);
 
 	try

@@ -14,6 +14,8 @@
 
 #include <sgx_quote.h>
 
+#include <SimpleObjects/Codec/Hex.hpp>
+
 #include "../Exceptions.hpp"
 #include "../Internal/SimpleObj.hpp"
 #include "EpidRaMessages.hpp"

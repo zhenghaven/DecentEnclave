@@ -13,6 +13,7 @@
 
 #include <SimpleSysIO/IOStreamBase.hpp>
 
+#include "../../Common/Internal/SimpleSysIO.hpp"
 #include "../../Common/Sgx/Exceptions.hpp"
 #include "../../SgxEdgeSources/sys_io_t.h"
 #include "UntrustedBuffer.hpp"
@@ -50,8 +51,8 @@ public:
 
 	void Seek(
 		std::ptrdiff_t offset,
-		SimpleSysIO::SeekWhence whence =
-			SimpleSysIO::SeekWhence::Begin
+		Common::Internal::SysIO::SeekWhence whence =
+			Common::Internal::SysIO::SeekWhence::Begin
 	)
 	{
 		DECENTENCLAVE_SGX_OCALL_CHECK_ERROR_E_R(

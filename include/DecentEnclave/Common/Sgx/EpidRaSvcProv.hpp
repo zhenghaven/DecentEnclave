@@ -26,6 +26,7 @@
 #include <SimpleObjects/SimpleObjects.hpp>
 
 #include "../Internal/SimpleObj.hpp"
+#include "../Internal/SimpleRlp.hpp"
 #include "../Platform/Print.hpp"
 #include "AttestationConfig.hpp"
 #include "Crypto.hpp"
@@ -490,7 +491,7 @@ protected:
 		auto msg4Body = Internal::Obj::Dict();
 		msg4Body[sk_labelVRes] = Internal::Obj::Bool(vrfyRes);
 		msg4Body[sk_labelRepSet] = Internal::Obj::Bytes(
-			SimpleRlp::WriterGeneric::Write(m_iasReportSet)
+			Internal::Rlp::WriterGeneric::Write(m_iasReportSet)
 		);
 		auto msg4BodyBytes = AdvancedRlp::GenericWriter::Write(msg4Body);
 

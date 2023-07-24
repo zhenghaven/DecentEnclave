@@ -12,6 +12,7 @@
 #include <sgx_uae_epid.h>
 #include <SimpleRlp/SimpleRlp.hpp>
 
+#include "../Common/Internal/SimpleRlp.hpp"
 #include "../Common/Platform/Print.hpp"
 #include "../Common/Sgx/EpidRaMessages.hpp"
 #include "../Common/Sgx/IasRequester.hpp"
@@ -239,7 +240,8 @@ extern "C" sgx_status_t ocall_decent_attest_ias_req_get_report(
 
 	_IasReportSet iasReportSet = iasRequester.GetReport(req_body);
 
-	auto iasReportSetARlp = SimpleRlp::WriterGeneric::Write(iasReportSet);
+	auto iasReportSetARlp = DecentEnclave::Common::Internal::
+		Rlp::WriterGeneric::Write(iasReportSet);
 	_UBuffer uBuffer = _UBuffer::Allocate(iasReportSetARlp.size());
 	std::copy(iasReportSetARlp.begin(), iasReportSetARlp.end(), uBuffer.m_data);
 

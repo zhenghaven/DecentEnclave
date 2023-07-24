@@ -13,6 +13,8 @@
 #include <mbedTLScpp/SKey.hpp>
 #include <SimpleSysIO/StreamSocketBase.hpp>
 
+#include "Internal/SimpleSysIO.hpp"
+
 
 namespace DecentEnclave
 {
@@ -45,8 +47,8 @@ public:
 	virtual bool IsHandshakeDone() const = 0;
 
 
-	virtual void HandshakeStep(SimpleSysIO::StreamSocketBase& sock) = 0;
-	virtual void Handshake(SimpleSysIO::StreamSocketBase& sock)
+	virtual void HandshakeStep(Internal::SysIO::StreamSocketBase& sock) = 0;
+	virtual void Handshake(Internal::SysIO::StreamSocketBase& sock)
 	{
 		while (!IsHandshakeDone())
 		{

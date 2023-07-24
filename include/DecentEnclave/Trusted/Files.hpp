@@ -11,6 +11,9 @@
 #include <SimpleObjects/Internal/make_unique.hpp>
 #include <SimpleSysIO/BinaryIOStreamBase.hpp>
 
+#include "../Common/Internal/SimpleObj.hpp"
+#include "../Common/Internal/SimpleSysIO.hpp"
+
 
 #ifdef DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
 #include "Sgx/Files.hpp"
@@ -53,20 +56,20 @@ protected:
 	)
 	{
 		auto impl =
-			SimpleObjects::Internal::make_unique<ImplType>(path, mode);
+			Common::Internal::Obj::
+				Internal::make_unique<ImplType>(path, mode);
 
 		return
-			SimpleObjects::Internal::make_unique<WrapperType>(
-				std::move(impl)
-			);
+			Common::Internal::Obj::
+				Internal::make_unique<WrapperType>(std::move(impl));
 	}
 
 }; // struct UntrustedFileOpenerImpl
 
 struct RBUntrustedFile :
 	UntrustedFileOpenerImpl<
-		SimpleSysIO::RBinaryIOSWrapper,
-		SimpleSysIO::RBinaryIOSBase
+		Common::Internal::SysIO::RBinaryIOSWrapper,
+		Common::Internal::SysIO::RBinaryIOSBase
 	>
 {
 	static RetType Open(const std::string& path)
@@ -78,8 +81,8 @@ struct RBUntrustedFile :
 
 struct WBUntrustedFile :
 	UntrustedFileOpenerImpl<
-		SimpleSysIO::WBinaryIOSWrapper,
-		SimpleSysIO::WBinaryIOSBase
+		Common::Internal::SysIO::WBinaryIOSWrapper,
+		Common::Internal::SysIO::WBinaryIOSBase
 	>
 {
 	static RetType Create(const std::string& path)
@@ -96,8 +99,8 @@ struct WBUntrustedFile :
 
 struct RWBUntrustedFile :
 	UntrustedFileOpenerImpl<
-		SimpleSysIO::RWBinaryIOSWrapper,
-		SimpleSysIO::RWBinaryIOSBase
+		Common::Internal::SysIO::RWBinaryIOSWrapper,
+		Common::Internal::SysIO::RWBinaryIOSBase
 	>
 {
 	static RetType Create(const std::string& path)

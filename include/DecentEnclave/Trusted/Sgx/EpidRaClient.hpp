@@ -19,6 +19,7 @@
 #include <sgx_tkey_exchange.h>
 
 
+#include "../../Common/Internal/SimpleObj.hpp"
 #include "../../Common/Platform/Print.hpp"
 #include "../../Common/Sgx/EpidRaMessages.hpp"
 #include "../../Common/Sgx/Exceptions.hpp"
@@ -321,10 +322,10 @@ public:
 			mbedTLScpp::CipherMode::ECB
 		>;
 
-		static const SimpleObjects::String sk_labelVRes = "VerifyResult";
-		static const SimpleObjects::String sk_labelRepSet = "ReportSet";
-		static const SimpleObjects::String sk_labelMsgBody = "MsgBody";
-		static const SimpleObjects::String sk_labelMac = "MAC";
+		static const Common::Internal::Obj::String sk_labelVRes = "VerifyResult";
+		static const Common::Internal::Obj::String sk_labelRepSet = "ReportSet";
+		static const Common::Internal::Obj::String sk_labelMsgBody = "MsgBody";
+		static const Common::Internal::Obj::String sk_labelMac = "MAC";
 
 		auto msg4Obj = AdvancedRlp::GenericParser().Parse(msg4);
 		const auto& msg4Dict = msg4Obj.AsDict();
