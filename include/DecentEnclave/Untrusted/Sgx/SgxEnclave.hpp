@@ -16,7 +16,7 @@
 
 #include <SimpleSysIO/SysCall/Files.hpp>
 
-#include "../../Common/Internal/SimpleIO.hpp"
+#include "../../Common/Internal/SimpleSysIO.hpp"
 #include "../../Common/Sgx/DevModeDefs.hpp"
 #include "../../Common/Sgx/Exceptions.hpp"
 
@@ -45,7 +45,7 @@ public:
 	) :
 		m_encId(0)
 	{
-		namespace _SysCall = Common::Internal::IO::SysCall;
+		namespace _SysCall = Common::Internal::SysIO::SysCall;
 
 		sgx_launch_token_t token = { 0 };
 		static constexpr size_t tokenLen = sizeof(sgx_launch_token_t);
