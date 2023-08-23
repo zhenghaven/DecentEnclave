@@ -90,7 +90,7 @@ public: // static members:
 			throw InvalidArgumentException("Invalid SPID string");
 		}
 
-		sgx_spid_t res;
+		sgx_spid_t res = sgx_spid_t();
 
 		std::vector<uint8_t> parsed = Internal::Obj::Codec::HEX::
 			template Decode<std::vector<uint8_t> >(spidStr);

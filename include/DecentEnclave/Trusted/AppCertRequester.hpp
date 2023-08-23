@@ -84,7 +84,10 @@ public:
 
 	std::string Request()
 	{
+		static const std::string sk_reqBody = "{\"method\":\"req_app_cert\"}";
+
 		auto socket = ComponentConnection::Connect(m_svrName);
+		socket->SizedSendBytes(sk_reqBody);
 
 		auto secSocket =
 			SecSocketWrap::FromHandshake(
