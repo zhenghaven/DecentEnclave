@@ -49,13 +49,13 @@ public: // static members:
 
 	static const std::string& GetIasSigrlUri()
 	{
-		static const std::string uri = "/attestation/v4/sigrl/";
+		static const std::string uri = "/attestation/v5/sigrl/";
 		return uri;
 	}
 
 	static const std::string& GetIasReportUri()
 	{
-		static const std::string uri = "/attestation/v4/report";
+		static const std::string uri = "/attestation/v5/report";
 		return uri;
 	}
 
