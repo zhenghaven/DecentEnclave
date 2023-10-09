@@ -205,6 +205,25 @@ public:
 	}
 
 
+	void RemoveRecv(
+		ConstraintIdType constraintId,
+		SocketIdType socketId
+	)
+	{
+		RemoveConstraint(constraintId);
+		RemoveSocket(socketId);
+	}
+
+
+	void RemoveRecv(
+		ConstraintPtrType constraint,
+		SocketPtrType socket
+	)
+	{
+		RemoveRecv(GetConstraintId(constraint), GetSocketId(socket));
+	}
+
+
 	HeartbeatStatus GetStatus() const
 	{
 		if (m_status == HeartbeatStatus::Damaged)
@@ -346,6 +365,20 @@ private:
 			// the constraint is not in the map
 			// add it to the map
 			m_constraintMap.emplace(constraintId, constraint);
+		}
+	}
+
+
+	void RemoveConstraint(
+		ConstraintIdType constraintId
+	)
+	{
+		Common::Platform::Print::StrDebug("Removing constraint: " + std::to_string(constraintId));
+		std::lock_guard<std::mutex> lock(m_constraintMapMutex);
+		auto it = m_constraintMap.find(constraintId);
+		if (it != m_constraintMap.end())
+		{
+			m_constraintMap.erase(it);
 		}
 	}
 
