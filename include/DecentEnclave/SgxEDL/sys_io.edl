@@ -17,6 +17,9 @@ enclave
 		);
 
 		uint64_t ocall_decent_untrusted_timestamp();
+		uint64_t ocall_decent_untrusted_timestamp_ms();
+		uint64_t ocall_decent_untrusted_timestamp_us();
+		uint64_t ocall_decent_untrusted_timestamp_ns();
 
 
 		/* untrusted files */

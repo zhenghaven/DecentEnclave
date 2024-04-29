@@ -22,6 +22,10 @@ sgx_status_t ecall_decent_ssocket_async_recv_raw_callback(
 	uint8_t has_error_occurred
 );
 
+uint64_t ocall_decent_untrusted_timestamp();
+uint64_t ocall_decent_untrusted_timestamp_ms();
+uint64_t ocall_decent_untrusted_timestamp_us();
+uint64_t ocall_decent_untrusted_timestamp_ns();
 
 #ifdef __cplusplus
 }

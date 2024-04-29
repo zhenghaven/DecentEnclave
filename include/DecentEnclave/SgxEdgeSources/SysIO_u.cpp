@@ -9,6 +9,8 @@
 #include <cstdint>
 #include <ctime>
 
+#include <chrono>
+
 #include <sgx_error.h>
 #include <SimpleObjects/Internal/make_unique.hpp>
 #include <SimpleSysIO/SysCall/Files.hpp>
@@ -52,6 +54,30 @@ extern "C" void ocall_decent_untrusted_buffer_delete(
 extern "C" uint64_t ocall_decent_untrusted_timestamp()
 {
 	return static_cast<uint64_t>(std::time(nullptr));
+}
+
+extern "C" uint64_t ocall_decent_untrusted_timestamp_ms()
+{
+	auto now = std::chrono::system_clock::now();
+	auto now_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(now);
+	auto epoch = now_ms.time_since_epoch();
+	return static_cast<uint64_t>(epoch.count());
+}
+
+extern "C" uint64_t ocall_decent_untrusted_timestamp_us()
+{
+	auto now = std::chrono::system_clock::now();
+	auto now_us = std::chrono::time_point_cast<std::chrono::microseconds>(now);
+	auto epoch = now_us.time_since_epoch();
+	return static_cast<uint64_t>(epoch.count());
+}
+
+extern "C" uint64_t ocall_decent_untrusted_timestamp_ns()
+{
+	auto now = std::chrono::system_clock::now();
+	auto now_ns = std::chrono::time_point_cast<std::chrono::nanoseconds>(now);
+	auto epoch = now_ns.time_since_epoch();
+	return static_cast<uint64_t>(epoch.count());
 }
 
 

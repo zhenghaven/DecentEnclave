@@ -6,17 +6,19 @@
 #pragma once
 
 
-#ifdef DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
+#ifdef DECENT_ENCLAVE_PLATFORM_SGX
 #include "Sgx/Time.hpp"
+#endif // DECENT_ENCLAVE_PLATFORM_SGX
 
 namespace DecentEnclave
 {
-namespace Trusted
+namespace Common
 {
 
+#ifdef DECENT_ENCLAVE_PLATFORM_SGX
 using UntrustedTime = Sgx::UntrustedTime;
+#endif // DECENT_ENCLAVE_PLATFORM_SGX
 
-} // namespace Trusted
+} // namespace Common
 } // namespace DecentEnclave
 
-#endif // DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED

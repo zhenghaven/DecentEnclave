@@ -20,6 +20,10 @@ sgx_status_t ocall_decent_untrusted_buffer_delete(
 );
 
 sgx_status_t ocall_decent_untrusted_timestamp(uint64_t* retval);
+sgx_status_t ocall_decent_untrusted_timestamp_ms(uint64_t* retval);
+sgx_status_t ocall_decent_untrusted_timestamp_us(uint64_t* retval);
+// uint64_t can hold nanoseconds until year 2554, Jan 21
+sgx_status_t ocall_decent_untrusted_timestamp_ns(uint64_t* retval);
 
 
 // ====================
