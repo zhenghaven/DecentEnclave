@@ -57,6 +57,7 @@ inline mbedTLScpp::X509Cert IssueSelfRaCert(
 	const std::string& selfHashHex,
 	const std::vector<uint8_t>& stdRepData,
 	const std::vector<uint8_t>& selfRaReportRlp,
+	const std::vector<uint8_t>& platformId,
 	mbedTLScpp::RbgInterface& rand
 )
 {
@@ -111,6 +112,10 @@ inline mbedTLScpp::X509Cert IssueSelfRaCert(
 		DecentOid::GetSgxSelfRaReportOid(),
 		false,
 		mbedTLScpp::CtnFullR(selfRaReportRlp)
+	).SetV3Extension(
+		DecentOid::GetPlatformIdOid(),
+		false,
+		mbedTLScpp::CtnFullR(platformId)
 	);
 
 	auto der = certWriter.GetDer(rand);

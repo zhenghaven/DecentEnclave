@@ -6,7 +6,10 @@
 #pragma once
 
 
+#include <cstdint>
+
 #include <string>
+#include <vector>
 
 #include <SimpleObjects/Codec/Hex.hpp>
 
@@ -37,12 +40,20 @@ namespace Trusted
 struct PlatformId : public PlatformIdImpl
 {
 
-static std::string GetIdHex()
-{
-	return Common::Internal::Obj::Codec::Hex::Encode<std::string>(
-			GetId()
-		);
-}
+	using Base = PlatformIdImpl;
+
+	static std::vector<uint8_t> GetId()
+	{
+		auto id = Base::GetId();
+		return std::vector<uint8_t>(id.begin(), id.end());
+	}
+
+	static std::string GetIdHex()
+	{
+		return Common::Internal::Obj::Codec::Hex::Encode<std::string>(
+				GetId()
+			);
+	}
 
 }; // struct PlatformId
 

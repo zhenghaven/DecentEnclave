@@ -119,6 +119,14 @@ struct DecentOid
 	}
 
 
+	static const std::string& GetPlatformIdOid()
+	{
+		static const std::string oid = GetDecentEnclaveOid() + '\x07';
+
+		return oid;
+	}
+
+
 	//==========
 	// Root.3.* - For platform specific data
 	//==========
