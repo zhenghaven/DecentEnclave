@@ -9,6 +9,8 @@
 #include <vector>
 
 #include "EnclaveBase.hpp"
+#include "Hosting/DecentLambdaFunc.hpp"
+#include "Hosting/HeartbeatEmitter.hpp"
 
 
 namespace DecentEnclave
@@ -17,22 +19,23 @@ namespace Untrusted
 {
 
 
-class DecentEnclaveBase : virtual public EnclaveBase
+class DecentEnclaveBase :
+	virtual public EnclaveBase,
+	virtual public Hosting::DecentLambdaFunc,
+	virtual public Hosting::HeartbeatEmitter
 {
+public: // static members:
+
+	using EncBase = EnclaveBase;
+	using LmdFuncBase = Hosting::DecentLambdaFunc;
+	using HeartbeatBase = Hosting::HeartbeatEmitter;
+
 public:
 	DecentEnclaveBase() = default;
 
 	// LCOV_EXCL_START
 	virtual ~DecentEnclaveBase() = default;
 	// LCOV_EXCL_STOP
-
-	// TODO: deterministic message interface
-	// virtual void HandleMsg(
-	// const std::vector<uint8_t>& eventId,
-	// const std::vector<uint8_t>& content,
-	// const std::vector<uint8_t>& signature,
-	// std::unique_ptr<Connection> connection
-	// ) = 0;
 
 }; // class DecentEnclaveBase
 

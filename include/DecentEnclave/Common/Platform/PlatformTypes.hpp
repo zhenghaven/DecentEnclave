@@ -6,24 +6,31 @@
 #pragma once
 
 
-namespace SimpleRlp
-{
-} // namespace SimpleRlp
+#include <cstdint>
 
-namespace AdvancedRlp
-{
-} // namespace AdvancedRlp
 
 namespace DecentEnclave
 {
 namespace Common
 {
-namespace Internal
+namespace Platform
 {
 
-namespace Rlp = ::SimpleRlp;
-namespace AdvRlp = ::AdvancedRlp;
 
-} // namespace Internal
+enum class PlatformTypes : uint8_t
+{
+	Untrusted = 0,
+	SGX       = 1,
+
+#ifdef DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
+	Native    = SGX,
+#else
+	Native    = Untrusted,
+#endif // DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
+
+}; // enum class PlatformTypes
+
+
+} // namespace Platform
 } // namespace Common
 } // namespace DecentEnclave

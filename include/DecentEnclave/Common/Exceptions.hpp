@@ -6,7 +6,7 @@
 #pragma once
 
 
-#include <SimpleObjects/Exceptions.hpp>
+#include <SimpleObjects/Exception.hpp>
 
 #include "Internal/SimpleObj.hpp"
 
@@ -35,6 +35,23 @@ public:
 	// LCOV_EXCL_STOP
 
 }; // class Exception
+
+
+class InvalidArgumentException : public Exception
+{
+public: // static members:
+
+	using Base = Exception;
+
+public:
+
+	using Base::Base;
+
+	// LCOV_EXCL_START
+	virtual ~InvalidArgumentException() = default;
+	// LCOV_EXCL_STOP
+
+}; // class InvalidArgumentException
 
 
 } // namespace Common

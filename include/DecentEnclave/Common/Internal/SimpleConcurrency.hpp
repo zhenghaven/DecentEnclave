@@ -6,9 +6,9 @@
 #pragma once
 
 
-namespace SimpleSysIO
+namespace SimpleConcurrency
 {
-} // namespace SimpleSysIO
+} // namespace SimpleConcurrency
 
 namespace DecentEnclave
 {
@@ -17,7 +17,7 @@ namespace Common
 namespace Internal
 {
 
-namespace IO = ::SimpleSysIO;
+namespace Concurrent = ::SimpleConcurrency;
 
 } // namespace Internal
 } // namespace Common

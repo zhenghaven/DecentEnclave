@@ -6,13 +6,9 @@
 #pragma once
 
 
-namespace SimpleRlp
+namespace SimpleSysIO
 {
-} // namespace SimpleRlp
-
-namespace AdvancedRlp
-{
-} // namespace AdvancedRlp
+} // namespace SimpleSysIO
 
 namespace DecentEnclave
 {
@@ -21,8 +17,7 @@ namespace Common
 namespace Internal
 {
 
-namespace Rlp = ::SimpleRlp;
-namespace AdvRlp = ::AdvancedRlp;
+namespace SysIO = ::SimpleSysIO;
 
 } // namespace Internal
 } // namespace Common
