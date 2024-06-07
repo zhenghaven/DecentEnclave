@@ -71,7 +71,8 @@ inline mbedTLScpp::X509Cert IssueSelfRaCert(
 				",O=DecentEnclave,OU=DecentServer"
 		);
 
-	mbedTLScpp::BigNum serialNum = mbedTLScpp::BigNum::Rand(32, rand);
+	mbedTLScpp::BigNum serialNum =
+		mbedTLScpp::BigNum::Rand(MBEDTLS_X509_RFC5280_MAX_SERIAL_LEN, rand);
 	auto decentExtEncKeyHash = Keyring::GetInstance().GenKeyHashList();
 
 	certWriter.SetValidationTime( // There is no trusted inside the enclave
@@ -150,7 +151,8 @@ inline mbedTLScpp::X509Cert IssueAppCert(
 				",O=DecentEnclave,OU=DecentApp"
 		);
 
-	mbedTLScpp::BigNum serialNum = mbedTLScpp::BigNum::Rand(32, rand);
+	mbedTLScpp::BigNum serialNum =
+		mbedTLScpp::BigNum::Rand(MBEDTLS_X509_RFC5280_MAX_SERIAL_LEN, rand);
 
 	certWriter.SetValidationTime( // There is no trusted inside the enclave
 		"20220101000000",
