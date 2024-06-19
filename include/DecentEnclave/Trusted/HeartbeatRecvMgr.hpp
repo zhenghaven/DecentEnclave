@@ -348,7 +348,7 @@ private:
 
 	static TimestampType GetCurrTimestamp()
 	{
-		return UntrustedTime::Timestamp();
+		return Common::UntrustedTime::Timestamp();
 	}
 
 
