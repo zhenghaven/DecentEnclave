@@ -16,7 +16,7 @@
 #include <SimpleSysIO/StreamSocketBase.hpp>
 
 #include "../Common/Internal/SimpleSysIO.hpp"
-#include "Time.hpp"
+#include "../Common/Time.hpp"
 
 
 namespace DecentEnclave
