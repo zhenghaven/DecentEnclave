@@ -53,7 +53,7 @@ struct DecentOid
 	}
 
 
-	static std::string BuildDecentEnclaveOid()
+	static std::string BuildDecentLabOid()
 	{
 		// This is the OID registered via IANA PENs for Decent Lab.
 		// https://www.iana.org/assignments/enterprise-numbers/
@@ -71,9 +71,17 @@ struct DecentOid
 	}
 
 
+	static const std::string& GetDecentLabOid()
+	{
+		static const std::string oid = BuildDecentLabOid();
+		return oid;
+	}
+
+
 	static const std::string& GetDecentEnclaveOid()
 	{
-		static const std::string oid = BuildDecentEnclaveOid();
+		static const std::string oid = GetDecentLabOid() + '\x01' + '\x01';
+
 		return oid;
 	}
 
