@@ -34,28 +34,40 @@ struct DecentOid
 	}
 
 
+	static const std::string& GetAsn1OidIdOrg()
+	{
+		static const std::string oidIdOrg = {
+			static_cast<char>(1 * 40 + 3) // 1.3
+		};
+		return oidIdOrg;
+	}
+
+
+	static const std::string& GetAsn1OidPEN()
+	{
+		// The PEN prefix is 1.3.6.1.4.1.
+		// https://www.iana.org/assignments/enterprise-numbers/
+		static const std::string oidPen =
+			GetAsn1OidIdOrg() + '\x06' + '\x01' + '\x04' + '\x01';
+		return oidPen;
+	}
+
+
 	static std::string BuildDecentEnclaveOid()
 	{
-		// This is the OID generated from UUID
-		// bac83453-fdf5-4ac2-9182-d7bc2ee0981e
-		// based on standard https://oidref.com/2.25
-		std::vector<uint8_t> uuid = {
-			0xbaU, 0xc8U, 0x34U, 0x53U,
-			0xfdU, 0xf5U,
-			0x4aU, 0xc2U,
-			0x91U, 0x82U,
-			0xd7U, 0xbcU, 0x2eU, 0xe0U, 0x98U, 0x1eU,
-		};
+		// This is the OID registered via IANA PENs for Decent Lab.
+		// https://www.iana.org/assignments/enterprise-numbers/
+		std::vector<uint8_t> pen = { 0xF2U, 0x45U, };
 		std::string res;
 
 		mbedTLScpp::Internal::Asn1MultiBytesOidEncode<char>(
 			std::back_inserter(res),
-			uuid.cbegin(),
-			uuid.cend(),
-			uuid.size()
+			pen.cbegin(),
+			pen.cend(),
+			pen.size()
 		);
 
-		return GetAsn1OidUuid() + res;
+		return GetAsn1OidPEN() + res;
 	}
 
 
