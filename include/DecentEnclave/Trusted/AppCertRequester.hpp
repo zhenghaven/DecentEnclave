@@ -14,10 +14,11 @@
 #include "../Common/AesGcmStreamSocket.hpp"
 #include "../Common/CertStore.hpp"
 #include "../Common/DecentCerts.hpp"
+#include "../Common/Internal/SimpleJson.hpp"
 #include "../Common/Internal/SimpleObj.hpp"
 #include "../Common/Keyring.hpp"
 #include "../Common/KeyringKey.hpp"
-#include "../Common/Platform/Print.hpp"
+#include "../Common/Logging.hpp"
 #include "../Common/Platform/Random.hpp"
 #include "AuthListMgr.hpp"
 #include "ComponentConnection.hpp"
@@ -73,11 +74,12 @@ public:
 		const std::string& keyName,
 		const std::string& certName
 	) :
+		m_logger(Common::LoggerFactory::GetLogger("DecentEnclave::Trusted::AppCertRequester")),
 		m_svrName(svrName),
 		m_keyName(keyName),
 		m_certName(certName),
 		m_csr(GenerateCSR(KeyringType::GetInstance()[keyName].GetPkey())),
-		m_appCertReq(BuildAppCertReq())
+		m_appCertReq(BuildAppCertReq(m_keyName, m_csr))
 	{}
 
 	~AppCertRequester() = default;
@@ -98,27 +100,67 @@ public:
 
 		secSocket->SizedSendBytes(m_appCertReq);
 
-		auto pemChain = secSocket->SizedRecvBytes<std::string>();
+		auto pem = secSocket->SizedRecvBytes<std::string>();
 
-		Common::Platform::Print::StrInfo(
-			"Certificate chain received:\n" + pemChain
-		);
+		m_logger.Info("App certificate received:\n" + pem);
 
-		return pemChain;
+		return pem;
+	}
+
+	std::string GetServerCert()
+	{
+		const std::string reqBody = BuildSvrCertReq(m_keyName);
+
+		auto socket = ComponentConnection::Connect(m_svrName);
+		socket->SizedSendBytes(reqBody);
+
+		auto resJson = socket->SizedRecvBytes<std::string>();
+		std::string pem = ReadSvrCertResult(resJson);
+
+		m_logger.Info("Server Certificate received:\n" + pem);
+
+		return pem;
 	}
 
 private:
 
-	std::vector<uint8_t> BuildAppCertReq()
+	static std::vector<uint8_t> BuildAppCertReq(
+		const std::string& keyName,
+		const std::vector<uint8_t>& csr
+	)
 	{
 		Common::AppCertRequest certReq;
-		certReq.get_KeyName() = m_keyName;
-		certReq.get_CSR() = Common::Internal::Obj::Bytes(m_csr);
+		certReq.get_KeyName() = keyName;
+		certReq.get_CSR() = Common::Internal::Obj::Bytes(csr);
 		certReq.get_AuthList() = Common::Internal::Obj::Bytes(
 			AuthListMgr::GetInstance().GetAuthListAdvRlp()
 		);
 
 		return AdvancedRlp::GenericWriter::Write(certReq);
+	}
+
+	static std::string BuildSvrCertReq(const std::string& keyName)
+	{
+		using _ObjString = Common::Internal::Obj::String;
+		using _ObjList = Common::Internal::Obj::List;
+		Common::Internal::Obj::Dict obj;
+		obj[_ObjString("method")] = _ObjString("get_svr_cert");
+		obj[_ObjString("params")] = _ObjList({
+			_ObjString(keyName)
+		});
+
+		return Common::Internal::Json::DumpStr(obj);
+	}
+
+	static std::string ReadSvrCertResult(const std::string& resJson)
+	{
+		using _ObjString = Common::Internal::Obj::String;
+
+		auto resObj = Common::Internal::Json::LoadStr(resJson);
+		const auto& resDict = resObj.AsDict();
+		const auto& resStr = resDict[_ObjString("result")].AsString();
+
+		return std::string(resStr.data(), resStr.data() + resStr.size());
 	}
 
 #ifdef DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
@@ -129,6 +171,10 @@ private:
 		return Common::Internal::Obj::Internal::make_unique<LaInitiator>();
 	}
 #endif // DECENT_ENCLAVE_PLATFORM_SGX_TRUSTED
+
+	using _LoggerType = typename Common::LoggerFactory::LoggerType;
+
+	_LoggerType m_logger;
 
 	std::string m_svrName;
 	std::string m_keyName;
